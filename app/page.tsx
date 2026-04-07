@@ -6,9 +6,52 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, Calendar, Zap, Image as ImageIcon, Loader2, Download, ArrowLeft, PenTool, Layout, Target, MessageSquare, FileText, Key, Save, Upload, Edit2, Check, X, Copy, Wand2, RefreshCw, Settings, Camera, Undo, Redo, User, Trash2, FolderOpen, Plus, Eye, Database } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { GoogleGenAI, Type } from '@google/genai';
 import { nuSkinProducts } from './nuskin-data';
 import { supabase } from '@/lib/supabaseClient';
+
+// Schema type constants to replace the @google/genai Type enum
+// These string values are serialized to the API route which converts them back
+const SchemaType = {
+  OBJECT: 'OBJECT',
+  ARRAY: 'ARRAY',
+  STRING: 'STRING',
+  NUMBER: 'NUMBER',
+  INTEGER: 'INTEGER',
+  BOOLEAN: 'BOOLEAN',
+} as const;
+
+// Server-side AI proxy helper — all Gemini calls go through /api/generate
+// This keeps the API key secure on the server
+const callAI = async (
+  model: string,
+  contents: any,
+  config?: any,
+  userApiKey?: string
+): Promise<{ text: string; candidates?: any }> => {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (userApiKey) {
+    headers['x-api-key'] = userApiKey;
+  }
+
+  const res = await fetch('/api/generate', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ model, contents, config }),
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({ error: 'Unknown error' }));
+    const error: any = new Error(errorBody.error || `API Error ${res.status}`);
+    error.status = res.status;
+    error.code = errorBody.status || res.status;
+    error.error = errorBody.error_details || { code: res.status, status: res.status >= 500 ? 'UNAVAILABLE' : 'FAILED' };
+    throw error;
+  }
+
+  return res.json();
+};
 
 
 
@@ -45,6 +88,14 @@ Content MUST feel 100% human-written, never AI-generated.
 
 Energy: confident + warm + ကြည်ချင်စဖွယ် + မြန်မာ ချိုချိုလေး humor\\n\\n`;
 
+interface UserProfile {
+  id: string;
+  name: string;
+  emoji: string;
+  gemini_api_key: string | null;
+  created_at: string;
+}
+
 interface SavedTemplate {
   id: string;
   name: string;
@@ -64,6 +115,7 @@ interface SavedTemplate {
   product_image_urls: string[];
   created_at: string;
   updated_at: string;
+  user_profile_id?: string;
 }
 
 interface PlanItem {
@@ -351,12 +403,22 @@ const SakuraFalling = () => {
 };
 
 export default function Dashboard() {
-  // API Key State
+  // Profile & Auth State
   const [isCheckingKey, setIsCheckingKey] = useState(true);
   const [hasKey, setHasKey] = useState(false);
   const [userApiKey, setUserApiKey] = useState('');
   const [apiKeyInput, setApiKeyInput] = useState('');
-  const currentApiKey = userApiKey || (typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_GEMINI_API_KEY : '') as string;
+  const [profiles, setProfiles] = useState<UserProfile[]>([]);
+  const [activeProfile, setActiveProfile] = useState<UserProfile | null>(null);
+  const [showProfileSelector, setShowProfileSelector] = useState(false);
+  const [newProfileName, setNewProfileName] = useState('');
+  const [newProfileEmoji, setNewProfileEmoji] = useState('😊');
+  const [isCreatingProfile, setIsCreatingProfile] = useState(false);
+  const [showNewProfileForm, setShowNewProfileForm] = useState(false);
+  const [isSavingApiKey, setIsSavingApiKey] = useState(false);
+  // currentApiKey: from active profile's cloud-synced key
+  // If empty, the server-side /api/generate route uses its own GEMINI_API_KEY env var
+  const currentApiKey = userApiKey || '';
 
   // Campaign Settings State
   const [productName, setProductName] = useState('');
@@ -588,34 +650,157 @@ export default function Dashboard() {
     }
   };
 
-  useEffect(() => {
-    // Check if the API key is configured in user's localStorage or environment
-    const storedKey = localStorage.getItem('gemini_api_key');
-    if (storedKey) {
-      setUserApiKey(storedKey);
-      setHasKey(true);
-    } else {
-      const apiKey = currentApiKey;
-      setHasKey(!!apiKey && apiKey !== 'your_gemini_api_key_here' && apiKey !== 'currentApiKey');
+  // Fetch profiles from Supabase on mount
+  const fetchProfiles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      setProfiles(data || []);
+      return data || [];
+    } catch (err) {
+      console.error('Failed to fetch profiles:', err);
+      return [];
     }
-    setIsCheckingKey(false);
-  }, []);
-
-  const handleSaveApiKey = () => {
-    if (!apiKeyInput.trim()) return;
-    localStorage.setItem('gemini_api_key', apiKeyInput.trim());
-    setUserApiKey(apiKeyInput.trim());
-    setHasKey(true);
   };
 
-  // Fetch all saved templates from Supabase
+  useEffect(() => {
+    // Check if we have a stored profile ID in localStorage (just the ID, not sensitive data)
+    const initProfiles = async () => {
+      const loadedProfiles = await fetchProfiles();
+      const storedProfileId = localStorage.getItem('active_profile_id');
+      
+      if (storedProfileId && loadedProfiles.length > 0) {
+        const found = loadedProfiles.find((p: UserProfile) => p.id === storedProfileId);
+        if (found) {
+          setActiveProfile(found);
+          if (found.gemini_api_key) {
+            setUserApiKey(found.gemini_api_key);
+            setHasKey(true);
+          } else {
+            // Profile exists but no API key — check server fallback
+            try {
+              const res = await fetch('/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: 'gemini-2.5-flash', contents: 'test', config: {} }),
+              });
+              setHasKey(res.status !== 401);
+            } catch {
+              setHasKey(false);
+            }
+          }
+          setIsCheckingKey(false);
+          return;
+        }
+      }
+      
+      // No stored profile — show profile selector
+      setShowProfileSelector(true);
+      setIsCheckingKey(false);
+    };
+    
+    initProfiles();
+  }, []);
+
+  const handleSelectProfile = async (profile: UserProfile) => {
+    setActiveProfile(profile);
+    localStorage.setItem('active_profile_id', profile.id);
+    setShowProfileSelector(false);
+    
+    if (profile.gemini_api_key) {
+      setUserApiKey(profile.gemini_api_key);
+      setHasKey(true);
+    } else {
+      // Check if server has a fallback key
+      try {
+        const res = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'gemini-2.5-flash', contents: 'test', config: {} }),
+        });
+        setHasKey(res.status !== 401);
+      } catch {
+        setHasKey(false);
+      }
+    }
+  };
+
+  const handleCreateProfile = async () => {
+    if (!newProfileName.trim()) return;
+    setIsCreatingProfile(true);
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .insert({ name: newProfileName.trim(), emoji: newProfileEmoji })
+        .select()
+        .single();
+      if (error) throw error;
+      setProfiles(prev => [...prev, data]);
+      setNewProfileName('');
+      setNewProfileEmoji('😊');
+      setShowNewProfileForm(false);
+      // Auto-select the new profile
+      handleSelectProfile(data);
+    } catch (err: any) {
+      console.error('Create profile error:', err);
+      setToastMessage('⚠️ ' + (err.message || 'Failed to create profile'));
+      setTimeout(() => setToastMessage(''), 4000);
+    } finally {
+      setIsCreatingProfile(false);
+    }
+  };
+
+  const handleSaveApiKey = async () => {
+    if (!apiKeyInput.trim() || !activeProfile) return;
+    setIsSavingApiKey(true);
+    try {
+      // Save to Supabase for cloud sync
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ gemini_api_key: apiKeyInput.trim() })
+        .eq('id', activeProfile.id);
+      if (error) throw error;
+      
+      setUserApiKey(apiKeyInput.trim());
+      setActiveProfile({ ...activeProfile, gemini_api_key: apiKeyInput.trim() });
+      setHasKey(true);
+      setToastMessage('✅ API key saved to cloud!');
+      setTimeout(() => setToastMessage(''), 3000);
+    } catch (err: any) {
+      console.error('Save API key error:', err);
+      setToastMessage('⚠️ Failed to save key: ' + (err.message || ''));
+      setTimeout(() => setToastMessage(''), 4000);
+    } finally {
+      setIsSavingApiKey(false);
+    }
+  };
+
+  const handleSwitchProfile = () => {
+    setShowProfileSelector(true);
+    setHasKey(false);
+    setUserApiKey('');
+    setActiveProfile(null);
+    localStorage.removeItem('active_profile_id');
+    fetchProfiles();
+  };
+
+  // Fetch all saved templates from Supabase (filtered by active profile)
   const fetchTemplates = async () => {
     setIsFetchingTemplates(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('campaign_settings')
         .select('*')
         .order('updated_at', { ascending: false });
+      
+      if (activeProfile) {
+        query = query.eq('user_profile_id', activeProfile.id);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       setSavedTemplates(data || []);
     } catch (error: any) {
@@ -626,8 +811,8 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (hasKey) fetchTemplates();
-  }, [hasKey]);
+    if (hasKey && activeProfile) fetchTemplates();
+  }, [hasKey, activeProfile]);
 
   // Upload images helper
   const uploadProductImages = async (): Promise<string[]> => {
@@ -696,6 +881,7 @@ export default function Dashboard() {
         days_count: daysCount,
         product_image_urls: imageUrls,
         updated_at: new Date().toISOString(),
+        user_profile_id: activeProfile?.id || null,
       };
 
       if (editingTemplateId) {
@@ -1011,7 +1197,7 @@ export default function Dashboard() {
     
     if (message.includes('requested entity was not found') || errorStr.includes('requested entity was not found')) {
       setHasKey(false);
-      setToastMessage('API Key invalid or not found. Please check your NEXT_PUBLIC_GEMINI_API_KEY in .env.local.');
+      setToastMessage('API Key invalid or not found. Please update your API key in your profile settings.');
     } else if (isRetryableError(error)) {
       setToastMessage('High demand or quota exceeded. Please wait a moment and try again.');
     } else {
@@ -1146,8 +1332,7 @@ export default function Dashboard() {
 
     setIsGeneratingOptions(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: currentApiKey });
-      
+            
       const prompt = `Analyze the following product name and optional images.
       Product Name: "${productName}"
       
@@ -1183,22 +1368,18 @@ export default function Dashboard() {
       
       contents.parts.push({ text: prompt });
 
-      const response = await withRetry(() => ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: contents,
-        config: {
+      const response = await withRetry(() => callAI('gemini-2.5-flash', contents, {
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-              benefits: { type: Type.ARRAY, items: { type: Type.STRING } },
-              emotions: { type: Type.ARRAY, items: { type: Type.STRING } },
-              audiences: { type: Type.ARRAY, items: { type: Type.STRING } }
+              benefits: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+              emotions: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+              audiences: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
             },
             required: ["benefits", "emotions", "audiences"]
           }
-        }
-      }));
+        }, currentApiKey));
 
       let jsonStr = response.text || '{}';
       jsonStr = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -1253,8 +1434,7 @@ export default function Dashboard() {
     setLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: currentApiKey });
-      
+            
       const fieldDescriptions = {
         benefits: `Product Benefits — generate 3 NEW, DIFFERENT, highly specific and punchy benefit phrases for "${productName}". Focus on unique selling points, sensory details, and transformative outcomes. MUST be in Myanmar (Burmese) language.${productBenefits ? ` Current value to AVOID repeating: "${productBenefits}"` : ''}`,
         emotions: `Desired Emotional Response — generate 3 NEW, DIFFERENT emotional states/feelings that a user of "${productName}" would experience. Be specific and vivid (not generic like "happy"). MUST be in Myanmar (Burmese) language.${emotionalResponse ? ` Current value to AVOID repeating: "${emotionalResponse}"` : ''}`,
@@ -1281,21 +1461,17 @@ export default function Dashboard() {
       }
       contents.parts.push({ text: prompt });
 
-      const response = await withRetry(() => ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: contents,
-        config: {
+      const response = await withRetry(() => callAI('gemini-2.5-flash', contents, {
           temperature: 1.3,
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-              options: { type: Type.ARRAY, items: { type: Type.STRING } }
+              options: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
             },
             required: ["options"]
           }
-        }
-      }));
+        }, currentApiKey));
 
       let jsonStr = response.text || '{}';
       jsonStr = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -1330,8 +1506,7 @@ export default function Dashboard() {
 
     setIsLetAIThinking(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: currentApiKey });
-      const productContext = getProductContext(productName);
+            const productContext = getProductContext(productName);
       const currentYear = new Date().getFullYear();
 
       const prompt = `You are an elite Myanmar digital marketing strategist with 15+ years of experience. You've worked with top beauty and lifestyle brands in Southeast Asia.
@@ -1378,30 +1553,26 @@ export default function Dashboard() {
       }
       contents.parts.push({ text: prompt });
 
-      const response = await withRetry(() => ai.models.generateContent({
-        model: 'gemini-2.5-pro',
-        contents: contents,
-        config: {
+      const response = await withRetry(() => callAI('gemini-2.5-pro', contents, {
           temperature: 0.7,
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-              productBenefits: { type: Type.STRING },
-              emotionalResponse: { type: Type.STRING },
-              targetAudience: { type: Type.STRING },
-              campaignGoal: { type: Type.STRING },
-              framework: { type: Type.STRING },
-              tone: { type: Type.STRING },
-              platform: { type: Type.STRING },
-              contentPillars: { type: Type.STRING },
-              ctaStyle: { type: Type.STRING },
-              reasoning: { type: Type.STRING }
+              productBenefits: { type: SchemaType.STRING },
+              emotionalResponse: { type: SchemaType.STRING },
+              targetAudience: { type: SchemaType.STRING },
+              campaignGoal: { type: SchemaType.STRING },
+              framework: { type: SchemaType.STRING },
+              tone: { type: SchemaType.STRING },
+              platform: { type: SchemaType.STRING },
+              contentPillars: { type: SchemaType.STRING },
+              ctaStyle: { type: SchemaType.STRING },
+              reasoning: { type: SchemaType.STRING }
             },
             required: ["productBenefits", "emotionalResponse", "targetAudience", "campaignGoal", "framework", "platform", "contentPillars", "ctaStyle", "reasoning"]
           }
-        }
-      }));
+        }, currentApiKey));
 
       let jsonStr = response.text || '{}';
       jsonStr = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -1443,8 +1614,7 @@ export default function Dashboard() {
     const genCount = lifestyleGenerationCountRef.current;
 
     try {
-      const ai = new GoogleGenAI({ apiKey: currentApiKey });
-      const availableProducts = nuSkinProducts.map(p => p.name).join(', ');
+            const availableProducts = nuSkinProducts.map(p => p.name).join(', ');
 
       // === ULTRA ANTI-REPETITION ENGINE v2 ===
       // Crypto-grade random seeds + time-based rotation + forced niche selection
@@ -1783,31 +1953,27 @@ export default function Dashboard() {
       9. Write the content 100% natively in the Myanmar (Burmese) language. Warm sisterly tone. Never clinical or formal.`;
 
       const contents: any = { parts: [{ text: prompt }] };
-      const response = await withRetry(() => ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: contents,
-        config: {
+      const response = await withRetry(() => callAI('gemini-2.5-flash', contents, {
           systemInstruction: MYANMAR_BEAUTY_HEALTH_WRITER_PROMPT,
           temperature: 1.4,
           topP: 0.95,
           topK: 60,
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.ARRAY,
+            type: SchemaType.ARRAY,
             items: {
-              type: Type.OBJECT,
+              type: SchemaType.OBJECT,
               properties: {
-                day: { type: Type.INTEGER, description: "Day number (1 to n)" },
-                title: { type: Type.STRING },
-                format: { type: Type.STRING },
-                hook: { type: Type.STRING },
-                summary: { type: Type.STRING }
+                day: { type: SchemaType.INTEGER, description: "Day number (1 to n)" },
+                title: { type: SchemaType.STRING },
+                format: { type: SchemaType.STRING },
+                hook: { type: SchemaType.STRING },
+                summary: { type: SchemaType.STRING }
               },
               required: ["day", "title", "format", "hook", "summary"]
             }
           }
-        }
-      }));
+        }, currentApiKey));
 
       let jsonStr = response.text || '[]';
       // Clean up potential markdown formatting
@@ -1874,8 +2040,7 @@ export default function Dashboard() {
     setPlanGenerationCount(currentGenCount);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: currentApiKey });
-      const productContext = getProductContext(productName);
+            const productContext = getProductContext(productName);
 
       // === CREATIVE DIVERSITY ENGINE ===
       // Different content angles to rotate through
@@ -2013,29 +2178,25 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
       6. Each hook should use a DIFFERENT hook technique (story, question, number, callout, POV, etc.)
       7. RANDOM SEED: ${Math.random().toString(36).substring(2, 10)}-${Date.now() % 100000} (use this to ensure uniqueness)`;
 
-      const response = await withRetry(() => ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
+      const response = await withRetry(() => callAI('gemini-2.5-flash', prompt, {
           systemInstruction: MYANMAR_STRATEGIST_PROMPT,
           temperature: 1.2 + (currentGenCount * 0.1 > 0.5 ? 0.5 : currentGenCount * 0.1),
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.ARRAY,
+            type: SchemaType.ARRAY,
             items: {
-              type: Type.OBJECT,
+              type: SchemaType.OBJECT,
               properties: {
-                day: { type: Type.NUMBER, description: `Day number (1-${daysCount})` },
-                title: { type: Type.STRING, description: "Short catchy title for the post" },
-                format: { type: Type.STRING, description: "e.g., Reel, Carousel, Story, Static Image" },
-                hook: { type: Type.STRING, description: "The opening hook or headline" },
-                summary: { type: Type.STRING, description: "Brief 1-2 sentence summary of the visual and content" }
+                day: { type: SchemaType.NUMBER, description: `Day number (1-${daysCount})` },
+                title: { type: SchemaType.STRING, description: "Short catchy title for the post" },
+                format: { type: SchemaType.STRING, description: "e.g., Reel, Carousel, Story, Static Image" },
+                hook: { type: SchemaType.STRING, description: "The opening hook or headline" },
+                summary: { type: SchemaType.STRING, description: "Brief 1-2 sentence summary of the visual and content" }
               },
               required: ["day", "title", "format", "hook", "summary"]
             }
           }
-        }
-      }));
+        }, currentApiKey));
 
       let jsonStr = response.text || '[]';
       // Clean up potential markdown formatting
@@ -2092,8 +2253,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
     setGenerationAttempt(currentAttempt);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: currentApiKey });
-      const productContext = getProductContext(productName);
+            const productContext = getProductContext(productName);
       
       const isLifestyle = isLifestyleMode;
       const lifestyleContext = isLifestyle ? `
@@ -2206,29 +2366,26 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
       }
       `;
 
-      const response = await withRetry(() => ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
+      const response = await withRetry(() => callAI('gemini-2.5-flash', prompt, {
           systemInstruction: MYANMAR_STRATEGIST_PROMPT,
           temperature: 1.0,
           maxOutputTokens: 8192,
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
               variations: {
-                type: Type.ARRAY,
+                type: SchemaType.ARRAY,
                 items: {
-                  type: Type.OBJECT,
+                  type: SchemaType.OBJECT,
                   properties: {
-                    id: { type: Type.STRING },
-                    title: { type: Type.STRING },
-                    platform: { type: Type.STRING },
-                    content: { type: Type.STRING },
-                    visualDirection: { type: Type.STRING },
-                    explanation: { type: Type.STRING },
-                    flags: { type: Type.STRING }
+                    id: { type: SchemaType.STRING },
+                    title: { type: SchemaType.STRING },
+                    platform: { type: SchemaType.STRING },
+                    content: { type: SchemaType.STRING },
+                    visualDirection: { type: SchemaType.STRING },
+                    explanation: { type: SchemaType.STRING },
+                    flags: { type: SchemaType.STRING }
                   },
                   required: ["id", "title", "platform", "content", "visualDirection", "explanation"]
                 }
@@ -2236,8 +2393,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
             },
             required: ["variations"]
           }
-        }
-      }));
+        }, currentApiKey));
 
       let jsonStr = response.text || '{}';
       jsonStr = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -2306,8 +2462,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
     setIsGeneratingVariation(index);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: currentApiKey });
-      const productContext = getProductContext(productName);
+            const productContext = getProductContext(productName);
       
       const isLifestyle = isLifestyleMode;
       const lifestyleContext = isLifestyle ? `
@@ -2399,27 +2554,23 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
       }
       `;
 
-      const response = await withRetry(() => ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
+      const response = await withRetry(() => callAI('gemini-2.5-flash', prompt, {
           systemInstruction: MYANMAR_STRATEGIST_PROMPT,
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-              id: { type: Type.STRING },
-              title: { type: Type.STRING },
-              platform: { type: Type.STRING },
-              content: { type: Type.STRING },
-              visualDirection: { type: Type.STRING },
-              explanation: { type: Type.STRING },
-              flags: { type: Type.STRING }
+              id: { type: SchemaType.STRING },
+              title: { type: SchemaType.STRING },
+              platform: { type: SchemaType.STRING },
+              content: { type: SchemaType.STRING },
+              visualDirection: { type: SchemaType.STRING },
+              explanation: { type: SchemaType.STRING },
+              flags: { type: SchemaType.STRING }
             },
             required: ["id", "title", "platform", "content", "visualDirection", "explanation"]
           }
-        }
-      }));
+        }, currentApiKey));
 
       let jsonStr = response.text || '{}';
       jsonStr = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -2550,8 +2701,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
     setSelectedHook('');
 
     try {
-      const ai = new GoogleGenAI({ apiKey: currentApiKey });
-      
+            
       let lengthInstruction = '';
       if (headlineLength === 'Short') lengthInstruction = 'Keep them very short (1-3 words).';
       else if (headlineLength === 'Medium') lengthInstruction = 'Make them medium length (4-7 words).';
@@ -2570,18 +2720,14 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
       3. TARGET AUDIENCE ALIGNMENT: You MUST strictly tailor all hooks to the specific Target Audience ("${targetAudience}"). Speak directly to their specific age group, pain points, desires, and lifestyle. Do not use generic messaging.
       4. Return a JSON array of strings.`;
 
-      const response = await withRetry(() => ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
+      const response = await withRetry(() => callAI('gemini-2.5-flash', prompt, {
           systemInstruction: MYANMAR_STRATEGIST_PROMPT,
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING }
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.STRING }
           }
-        }
-      }));
+        }, currentApiKey));
 
       let jsonStr = response.text || '[]';
       jsonStr = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -2662,8 +2808,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
     // setFinalImageWithLogo('');
 
     try {
-      const ai = new GoogleGenAI({ apiKey: currentApiKey });
-      const productContext = getProductContext(productName);
+            const productContext = getProductContext(productName);
       
       const modelPrompt = includeModel 
         ? `Include an 8k hyper-realistic, breathtakingly beautiful and highly attractive Korean or Chinese model. The model MUST have very light, glowing skin color and 100% life-like realistic skin texture with visible pores. DO NOT make the model look like plastic, CGI, or artificial. The model should interact naturally with the product or concept.` 
@@ -3042,20 +3187,12 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
         if (isAbortedRef.current) throw new Error('ABORTED');
         console.log(`Generating with ${modelName}...`);
         setGenerationStep(`Generating with ${modelName.split('-')[1].toUpperCase()}...`);
-        
-        const currentAi = usePlatformKey 
-          ? new GoogleGenAI({ apiKey: currentApiKey })
-          : ai;
 
         return await withRetry(() => {
           if (isAbortedRef.current) throw new Error('ABORTED');
-          return currentAi.models.generateContent({
-            model: modelName,
-            contents: {
+          return callAI(modelName, {
               parts: customParts || parts,
-            },
-            config: config
-          });
+            }, config, currentApiKey);
         }, retries);
       };
 
@@ -3273,17 +3410,146 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
     );
   }
 
-  if (!hasKey) {
+  // Profile selector screen
+  if (showProfileSelector) {
+    const emojiOptions = ['👑', '💖', '🌸', '✨', '🦋', '💎', '🌙', '🔥', '🎀', '🌺', '💫', '🍀', '🐱', '🌈', '😊', '🎯'];
     return (
       <main className="flex-1 w-full min-h-screen flex flex-col items-center justify-center p-4 relative bg-background transition-colors duration-300">
         <SakuraFalling />
-        <div className="glass border border-border rounded-3xl shadow-2xl p-12 max-w-md w-full text-center relative z-10 card-hover">
-          <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-8">
-            <Key className="w-10 h-10 text-primary" />
+        <div className="absolute top-4 right-4 z-10">
+          <ThemeToggle />
+        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="relative z-10 text-center max-w-lg w-full"
+        >
+          <h1 className="font-serif text-5xl md:text-6xl text-foreground mb-4 tracking-tighter">
+            Princess
+          </h1>
+          <p className="text-muted-foreground text-lg mb-12 font-light">Who&apos;s creating today?</p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
+            {profiles.map((profile, idx) => (
+              <motion.button
+                key={profile.id}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: idx * 0.1, duration: 0.3 }}
+                onClick={() => handleSelectProfile(profile)}
+                className="glass border border-border rounded-2xl p-6 flex flex-col items-center gap-3 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 active:scale-95 group cursor-pointer"
+              >
+                <span className="text-4xl group-hover:scale-110 transition-transform duration-300">{profile.emoji}</span>
+                <span className="text-sm font-semibold text-foreground">{profile.name}</span>
+                {profile.gemini_api_key && (
+                  <span className="text-[10px] text-emerald-500 flex items-center gap-1">
+                    <Check className="w-3 h-3" /> API Key Set
+                  </span>
+                )}
+              </motion.button>
+            ))}
+
+            {/* Add New Profile Button */}
+            {!showNewProfileForm && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: profiles.length * 0.1, duration: 0.3 }}
+                onClick={() => setShowNewProfileForm(true)}
+                className="border-2 border-dashed border-border rounded-2xl p-6 flex flex-col items-center gap-3 hover:border-primary/50 transition-all duration-300 active:scale-95 cursor-pointer text-muted-foreground hover:text-foreground"
+              >
+                <Plus className="w-8 h-8" />
+                <span className="text-sm font-medium">New Profile</span>
+              </motion.button>
+            )}
           </div>
-          <h1 className="font-serif text-4xl text-foreground mb-4 tracking-tight">Welcome to Princess</h1>
-          <p className="text-muted-foreground mb-8 text-lg leading-relaxed">
-            Please enter your Gemini API key to activate the AI Art Director. Your key is stored securely in your browser.
+
+          {/* New Profile Form */}
+          <AnimatePresence>
+            {showNewProfileForm && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="glass border border-border rounded-2xl p-6 mb-6 overflow-hidden"
+              >
+                <h3 className="text-sm font-bold text-foreground mb-4">Create New Profile</h3>
+                
+                <div className="flex flex-wrap gap-2 mb-4 justify-center">
+                  {emojiOptions.map(e => (
+                    <button
+                      key={e}
+                      onClick={() => setNewProfileEmoji(e)}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all ${newProfileEmoji === e ? 'bg-primary/20 border-2 border-primary scale-110' : 'bg-background border border-border hover:bg-muted'}`}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+                
+                <input
+                  type="text"
+                  placeholder="Profile name..."
+                  value={newProfileName}
+                  onChange={(e) => setNewProfileName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreateProfile()}
+                  className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-center mb-4"
+                  autoFocus
+                />
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setShowNewProfileForm(false); setNewProfileName(''); }}
+                    className="flex-1 py-3 bg-background border border-border rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCreateProfile}
+                    disabled={!newProfileName.trim() || isCreatingProfile}
+                    className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isCreatingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    Create
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </main>
+    );
+  }
+
+  // API key entry screen (shown after profile selected but no key set)
+  if (!hasKey && activeProfile) {
+    return (
+      <main className="flex-1 w-full min-h-screen flex flex-col items-center justify-center p-4 relative bg-background transition-colors duration-300">
+        <SakuraFalling />
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-3">
+          <ThemeToggle />
+        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass border border-border rounded-3xl shadow-2xl p-12 max-w-md w-full text-center relative z-10 card-hover"
+        >
+          <button
+            onClick={handleSwitchProfile}
+            className="absolute top-4 left-4 p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            title="Switch Profile"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+
+          <div className="text-5xl mb-4">{activeProfile.emoji}</div>
+          <h1 className="font-serif text-3xl text-foreground mb-2 tracking-tight">
+            Hi, {activeProfile.name}!
+          </h1>
+          <p className="text-muted-foreground mb-8 text-base leading-relaxed">
+            Enter your Gemini API key to activate Princess.{' '}
+            <span className="text-xs opacity-70">Your key syncs across all devices.</span>
           </p>
           
           <div className="space-y-4 mb-8">
@@ -3297,21 +3563,34 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
             />
             <button
               onClick={handleSaveApiKey}
-              disabled={!apiKeyInput.trim()}
+              disabled={!apiKeyInput.trim() || isSavingApiKey}
               className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-2xl hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              <Wand2 className="w-5 h-5" />
+              {isSavingApiKey ? <Loader2 className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
               Activate AI Studio
             </button>
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Don't have a key? Get one for free at{' '}
+            Don&apos;t have a key? Get one for free at{' '}
             <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline hover:text-primary transition-colors text-primary/80">
               Google AI Studio
             </a>
           </p>
-        </div>
+        </motion.div>
+      </main>
+    );
+  }
+
+  // Fallback: no active profile and no profile selector
+  if (!hasKey) {
+    // Redirect to profile selector
+    if (!showProfileSelector) {
+      setShowProfileSelector(true);
+    }
+    return (
+      <main className="flex-1 w-full min-h-screen flex items-center justify-center bg-background transition-colors duration-300">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
       </main>
     );
   }
@@ -3337,11 +3616,12 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
           </div>
           <div className="flex items-center gap-3">
             <button 
-              onClick={() => { setHasKey(false); setApiKeyInput(userApiKey); }}
-              className="p-2.5 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border bg-card shadow-sm flex items-center justify-center"
-              title="API Key Settings"
+              onClick={handleSwitchProfile}
+              className="h-9 px-3 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border bg-card shadow-sm flex items-center gap-2"
+              title={`Signed in as ${activeProfile?.name || 'Unknown'} — Click to switch`}
             >
-              <Key className="w-4 h-4" />
+              <span className="text-sm">{activeProfile?.emoji || '👤'}</span>
+              <span className="text-xs font-medium hidden sm:block">{activeProfile?.name || ''}</span>
             </button>
             <ThemeToggle />
           </div>
@@ -3809,11 +4089,12 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
         <SakuraFalling />
         <div className="absolute top-4 right-4 sm:top-8 sm:right-8 z-10 flex items-center gap-3">
           <button 
-            onClick={() => { setHasKey(false); setApiKeyInput(userApiKey); }}
-            className="p-2.5 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border bg-card shadow-sm flex items-center justify-center"
-            title="API Key Settings"
+            onClick={handleSwitchProfile}
+            className="h-9 px-3 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border bg-card shadow-sm flex items-center gap-2"
+            title={`Signed in as ${activeProfile?.name || 'Unknown'} — Click to switch`}
           >
-            <Key className="w-4 h-4" />
+            <span className="text-sm">{activeProfile?.emoji || '👤'}</span>
+            <span className="text-xs font-medium hidden sm:block">{activeProfile?.name || ''}</span>
           </button>
           <ThemeToggle />
         </div>
@@ -4075,11 +4356,12 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
       
       <div className="absolute top-4 right-4 sm:top-8 sm:right-8 z-10 flex items-center gap-3">
         <button 
-          onClick={() => { setHasKey(false); setApiKeyInput(userApiKey); }}
-          className="p-2.5 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border bg-card shadow-sm flex items-center justify-center"
-          title="API Key Settings"
+          onClick={handleSwitchProfile}
+          className="h-9 px-3 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground border border-border bg-card shadow-sm flex items-center gap-2"
+          title={`Signed in as ${activeProfile?.name || 'Unknown'} — Click to switch`}
         >
-          <Key className="w-4 h-4" />
+          <span className="text-sm">{activeProfile?.emoji || '👤'}</span>
+          <span className="text-xs font-medium hidden sm:block">{activeProfile?.name || ''}</span>
         </button>
         <ThemeToggle />
       </div>
