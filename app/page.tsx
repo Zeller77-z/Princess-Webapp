@@ -4789,7 +4789,7 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                   <FolderOpen className="w-7 h-7 text-muted-foreground/40" />
                 </div>
                 <p className="text-xs text-muted-foreground">No templates yet.</p>
-                <p className="text-[10px] text-muted-foreground/60 mt-1">Click "+ Save" to create your first template.</p>
+                <p className="text-[10px] text-muted-foreground/60 mt-1">Click &quot;+ Save&quot; to create your first template.</p>
               </div>
             ) : (
               <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
