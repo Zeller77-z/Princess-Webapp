@@ -1,0 +1,34 @@
+﻿   Γû▓ Next.js 15.5.14
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+node.exe : Failed to 
+compile.
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo       
+       : NotSpecified:   
+  (Failed to compile.:   
+ String) [], RemoteEx    
+ception
+    + FullyQualifiedErro 
+   rId : NativeCommandE  
+  rror
+ 
+
+Error: EISDIR: illegal 
+operation on a 
+directory, readlink 
+'E:\Git Hub Pj\Princess-W
+ebapp\node_modules\next\d
+ist\pages\_app.js'
+
+
+> Build failed because 
+of webpack errors

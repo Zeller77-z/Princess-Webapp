@@ -354,53 +354,6 @@ Content MUST feel 100% human-written, never AI-generated.
 - Zero spelling errors. Correct particles (ကို/က/ကော/မှ/တွင်/၌). SOV word order (not English SVO). Match colloquial tone to audience.
 `;
 
-const SakuraFalling = () => {
-  const [petals] = useState(() =>
-    Array.from({ length: 12 }).map((_, i) => ({
-      id: i,
-      left: `${Math.random() * 100}%`,
-      delay: Math.random() * 10,
-      duration: 15 + Math.random() * 25,
-      size: 8 + Math.random() * 12,
-      xOffset: `${(Math.random() - 0.5) * 15}vw`,
-    }))
-  );
-
-  return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 opacity-20 dark:opacity-10">
-      {petals.map((petal) => (
-        <motion.div
-          key={petal.id}
-          initial={{ y: -20, opacity: 0, rotate: 0 }}
-          animate={{
-            y: ['0vh', '110vh'],
-            opacity: [0, 1, 1, 0],
-            rotate: [0, 360, 720],
-            x: ['0vw', petal.xOffset],
-          }}
-          transition={{
-            duration: petal.duration,
-            repeat: Infinity,
-            delay: petal.delay,
-            ease: 'linear',
-          }}
-          style={{
-            left: petal.left,
-            width: petal.size,
-            height: petal.size,
-          }}
-          className="absolute"
-        >
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-pink-200/40 dark:text-pink-400/20 fill-current">
-            <path d="M12 21.5C12 21.5 10 18 10 14C10 10 12 7 12 7C12 7 14 10 14 14C14 18 12 21.5 12 21.5Z" />
-            <path d="M12 21.5C12 21.5 14 18 14 14C14 10 12 7 12 7C12 7 10 10 10 14C10 18 12 21.5 12 21.5Z" transform="rotate(45 12 14)" />
-            <path d="M12 21.5C12 21.5 14 18 14 14C14 10 12 7 12 7C12 7 10 10 10 14C10 18 12 21.5 12 21.5Z" transform="rotate(-45 12 14)" />
-          </svg>
-        </motion.div>
-      ))}
-    </div>
-  );
-};
 
 export default function Dashboard() {
   // Profile & Auth State
@@ -3415,7 +3368,7 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
     const emojiOptions = ['👑', '💖', '🌸', '✨', '🦋', '💎', '🌙', '🔥', '🎀', '🌺', '💫', '🍀', '🐱', '🌈', '😊', '🎯'];
     return (
       <main className="flex-1 w-full min-h-screen flex flex-col items-center justify-center p-4 relative bg-background transition-colors duration-300">
-        <SakuraFalling />
+
         <div className="absolute top-4 right-4 z-10">
           <ThemeToggle />
         </div>
@@ -3526,7 +3479,7 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
   if (!hasKey && activeProfile) {
     return (
       <main className="flex-1 w-full min-h-screen flex flex-col items-center justify-center p-4 relative bg-background transition-colors duration-300">
-        <SakuraFalling />
+
         <div className="absolute top-4 right-4 z-10 flex items-center gap-3">
           <ThemeToggle />
         </div>
@@ -3601,8 +3554,7 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
   if (selectedDay && isImageGenView) {
     return (
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative min-h-screen bg-background transition-colors duration-300">
-        <SakuraFalling />
-        
+
         <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button 
@@ -4074,6 +4026,35 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                 </div>
               )}
             </div>
+
+            {/* NEW: Download & Copy Final Assets Control Panel (Mobile Sticky) */}
+            {finalImageWithLogo && !isGeneratingImage && (
+              <div className="fixed inset-x-0 bottom-0 z-50 p-4 bg-background/80 backdrop-blur-xl border-t border-border shadow-[0_-10px_40px_rgba(0,0,0,0.1)] lg:static lg:p-6 lg:bg-white lg:dark:bg-[#191919] lg:shadow-sm lg:rounded-xl lg:mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 lg:gap-4 transition-all animate-in slide-in-from-bottom-5">
+                <div className="hidden sm:block text-sm font-serif text-neutral-600 dark:text-neutral-400">
+                  Your asset is ready. Copy your text and download the design!
+                </div>
+                <div className="flex w-full sm:w-auto items-center gap-3">
+                  <button
+                    onClick={() => {
+                      const activeContent = postVariations[activeVariationIndex]?.content || selectedDay.summary || '';
+                      navigator.clipboard.writeText(activeContent);
+                      setToastMessage('Post content copied! 🎉');
+                      setTimeout(() => setToastMessage(''), 3000);
+                    }}
+                    className="flex-1 sm:flex-none btn-premium-silver px-4 lg:px-6 py-4 lg:py-3 rounded-2xl lg:rounded-xl font-bold flex items-center justify-center gap-2 text-sm shadow-sm"
+                  >
+                    <Copy className="w-5 h-5 lg:w-4 lg:h-4" /> <span className="sm:inline">Copy Text</span>
+                  </button>
+                  <a 
+                    href={finalImageWithLogo} 
+                    download={`Princess-Design-Day${selectedDay.day}.png`}
+                    className="flex-1 sm:flex-none btn-premium-chrome px-4 lg:px-6 py-4 lg:py-3 rounded-2xl lg:rounded-xl font-bold flex items-center justify-center gap-2 text-sm shadow-xl shadow-primary/20"
+                  >
+                    <Download className="w-5 h-5 lg:w-4 lg:h-4" /> <span className="sm:inline">Download</span>
+                  </a>
+                </div>
+              </div>
+            )}
           </motion.div>
         </div>
       </main>
@@ -4086,7 +4067,7 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
   if (selectedDay) {
     return (
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative min-h-screen">
-        <SakuraFalling />
+
         <div className="absolute top-4 right-4 sm:top-8 sm:right-8 z-10 flex items-center gap-3">
           <button 
             onClick={handleSwitchProfile}
@@ -4352,8 +4333,7 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
   // ---------------------------------------------------------------------------
   return (
     <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative min-h-screen bg-background transition-colors duration-300">
-      <SakuraFalling />
-      
+
       <div className="absolute top-4 right-4 sm:top-8 sm:right-8 z-10 flex items-center gap-3">
         <button 
           onClick={handleSwitchProfile}
@@ -5465,3 +5445,4 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
     </main>
   );
 }
+
