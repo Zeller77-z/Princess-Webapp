@@ -1531,7 +1531,7 @@ export default function Dashboard() {
       }
       contents.parts.push({ text: prompt });
 
-      const response = await withRetry(() => callAI('gemini-2.5-pro', contents, {
+      const response = await withRetry(() => callAI('gemini-2.5-flash', contents, {
           temperature: 0.7,
           responseMimeType: "application/json",
           responseSchema: {
