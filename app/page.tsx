@@ -184,7 +184,7 @@ const BEAUTY_HEALTH_TRAINING_DATA = {
       viral_score: 5, content_type: 'myth_bust_educational', target_emotion: 'relief_and_aha_moment',
       recommended_format: 'Myth-bust carousel + before/after text comparison',
       why_viral: 'Everyone has experienced "my skincare stopped working" — massive relatability drives saves and shares.',
-      hooks: [\"Over-exfoliating is destroying your skin and you don't even know it\", \"Why your expensive skincare isn't working anymore\", \"The real reason your skin is always dry\"],
+      hooks: [`Over-exfoliating is destroying your skin and you don't even know it`, `Why your expensive skincare isn't working anymore`, `The real reason your skin is always dry`],
       keywords: ['skin barrier', 'ceramide', 'over-exfoliation', 'sensitive skin', 'barrier repair', 'lipid layer', 'skin inflammation'],
       example_post: `Your moisturizer stopped working? Your skin barrier might be damaged — and your skincare routine could be the cause.nnSigns your barrier is broken:n• Skin feels tight even after moisturizingn• Redness and sensitivity to products you used to toleraten• Breakouts in unusual spotsn• Burning sensation when applying serumsnnSurprising causes:n1. Over-exfoliating (2x a week max)n2. Using too many active ingredients at oncen3. Hot showers — they strip your lipid layernnThe fix: Stop all actives. Switch to a fragrance-free gentle cleanser. Layer a ceramide moisturizer. Give it 2 weeks.nnMyth: If it tingles, it's working. NO — tingling = irritation = barrier damage.`
     },
@@ -202,7 +202,7 @@ const BEAUTY_HEALTH_TRAINING_DATA = {
       viral_score: 5, content_type: 'educational_list', target_emotion: 'surprise_and_actionable_relief',
       recommended_format: 'Countdown list with swap suggestions',
       why_viral: 'Food-skin connection is extremely shareable. People are shocked by hidden culprits. Swap format makes it actionable.',
-      hooks: [\"The breakfast food that's making your acne worse\", \"6 foods your dermatologist quietly avoids\", \"Cut these 6 foods for clearer skin in 3 days\"],
+      hooks: [`The breakfast food that's making your acne worse`, `6 foods your dermatologist quietly avoids`, `Cut these 6 foods for clearer skin in 3 days`],
       keywords: ['anti-inflammatory diet', 'skin food', 'acne diet', 'gut skin connection', 'dairy acne', 'sugar acne', 'omega-6 inflammation'],
       example_post: `The food in your breakfast might be why your skin won't clear up.nnFoods silently inflaming your skin:n1. Refined sugar → spikes insulin → triggers excess sebum → breakouts (Swap: Berries + dark chocolate)n2. Dairy milk → contains hormones that stimulate oil glands (Swap: Oat milk)n3. Vegetable oils → high omega-6 → promotes inflammation (Swap: Olive oil)n4. White bread & white rice → high glycemic → insulin spike (Swap: Sweet potato, quinoa)n5. Alcohol → dehydrates skin, depletes zinc (Swap: Sparkling water with lemon)n6. Processed snacks → trans fats → disrupt fatty acid balance (Swap: Nuts, seeds, hummus)nn3-day skin reset: Eliminate all 6. Add salmon, leafy greens, and zinc-rich pumpkin seeds.`
     },
@@ -211,7 +211,7 @@ const BEAUTY_HEALTH_TRAINING_DATA = {
       viral_score: 4, content_type: 'comparison_educational', target_emotion: 'informed_skepticism_and_empowerment',
       recommended_format: 'Balanced comparison post + science-light explanation',
       why_viral: 'Collagen supplements are a billion-dollar market. The nuanced truth surprises people and drives debate.',
-      hooks: [\"Your body destroys collagen supplements before they reach your skin\", \"Why vitamin C is better than collagen powder\", \"The truth about collagen supplements nobody tells you\"],
+      hooks: [`Your body destroys collagen supplements before they reach your skin`, `Why vitamin C is better than collagen powder`, `The truth about collagen supplements nobody tells you`],
       keywords: ['collagen supplement', 'collagen food', 'anti-aging nutrition', 'vitamin C skin', 'collagen peptides', 'proline', 'glycine'],
       example_post: `Spending money on collagen supplements? Here's what you actually need to know.nnWhat collagen does: Keeps skin firm, plump, and bouncy. After 25, your body produces 1% less each year.nnThe supplement truth: When you swallow collagen, your stomach breaks it into amino acids. Your body reassembles them wherever it decides — not necessarily your skin.nnFoods that directly boost collagen production:n• Oranges, kiwi, bell peppers → Vitamin C (essential co-factor)n• Pumpkin seeds, chickpeas → Zincn• Dark chocolate, sesame → Coppern• Bone broth, chicken skin → Proline (collagen precursor)n• Egg whites → Glycine + prolinennThe verdict: A Vitamin C-rich diet is the most evidence-backed collagen strategy.`
     },
@@ -229,7 +229,7 @@ const BEAUTY_HEALTH_TRAINING_DATA = {
       viral_score: 4, content_type: 'motivational_educational', target_emotion: 'motivating_shock',
       recommended_format: 'Visual effects list + sleep optimization tips',
       why_viral: 'Sleep beauty is a concept people know but underestimate. Specific biological details turn vague advice into compelling must-change motivation.',
-      hooks: [\"Your skin ages faster when you sleep less than 6 hours\", \"6 things sleep deprivation is doing to your face right now\", \"Free anti-aging treatment you're skipping every night\"],
+      hooks: [`Your skin ages faster when you sleep less than 6 hours`, `6 things sleep deprivation is doing to your face right now`, `Free anti-aging treatment you're skipping every night`],
       keywords: ['beauty sleep', 'sleep skin', 'HGH skin repair', 'collagen sleep', 'circadian rhythm skin', 'undereye circles sleep'],
       example_post: `"I'll sleep when I'm dead" — your skin is aging faster because of this mindset.nnWhat happens when you sleep:nHours 1-4: Melatonin rises, cell damage slows.nHours 5-8: Human Growth Hormone peaks → collagen production accelerates → skin cells regenerate.nn6 signs of chronic sleep deprivation:n1. Dull, grey-toned skin (slowed cell turnover)n2. Puffy eyes (fluid redistribution)n3. Deeper fine lines that don't bounce backn4. Breakouts along jawline (cortisol spike)n5. Darker undereye circles (blood vessel dilation)n6. Dry, dehydrated patchesnn3 sleep habits that ARE skincare:n• Cool room (18-19°C) = deeper sleep = more HGH releasen• Silk pillowcase = less friction = fewer morning creasesn• Consistent sleep time = circadian rhythm = predictable skin repair`
     },
@@ -256,7 +256,7 @@ const BEAUTY_HEALTH_TRAINING_DATA = {
       viral_score: 5, content_type: 'comprehensive_guide', target_emotion: 'patience_and_confidence',
       recommended_format: 'Beginner guide + timeline + do's and don'ts',
       why_viral: 'Retinol is the most-searched skincare ingredient. Quitting during the purge phase is the #1 mistake — drives massive saves as reference guide.',
-      hooks: [\"Most people quit retinol right before it starts working\", \"The retinol purge is supposed to happen\", \"Week-by-week: what retinol actually does to your skin\"],
+      hooks: [`Most people quit retinol right before it starts working`, `The retinol purge is supposed to happen`, `Week-by-week: what retinol actually does to your skin`],
       keywords: ['retinol beginner', 'retinol purge', 'retinol sandwich method', 'anti-aging retinol', 'skin cell turnover'],
       example_post: `You bought retinol. Your skin freaked out. You stopped. That was the biggest mistake.nnWeek-by-week reality:nWeeks 1-2: Dryness, flaking, mild irritation. Normal.nWeeks 3-4: Purging — old debris rises to surface. STILL NORMAL.nWeeks 5-8: Skin calms. Texture improving.nWeeks 9-12: The glow people post about begins.nnHow to start without destroying your skin:n• Frequency: 1x/week → 2x → 3x. Never daily to start.n• Sandwich method: moisturizer → retinol → moisturizern• Always PM only. Retinol degrades in sunlight.n• Start at 0.025% or 0.05%. Not 1%.nnNever combine with:n• AHA/BHA same nightn• Vitamin C same PM applicationn• Benzoyl peroxide (deactivates retinol)nnSPF every morning when using retinol. Non-negotiable.`
     },
@@ -265,7 +265,7 @@ const BEAUTY_HEALTH_TRAINING_DATA = {
       viral_score: 5, content_type: 'science_explainer_actionable', target_emotion: 'aha_moment_and_empowerment',
       recommended_format: 'Science explainer + 7-day gut reset protocol',
       why_viral: 'Gut-skin axis is one of the fastest-growing beauty science topics. Explains why topical-only approaches fail — huge paradigm shift.',
-      hooks: [\"Your acne is a gut problem, not a skin problem\", \"Why no skincare routine will fix gut-related breakouts\", \"The gut reset that cleared stubborn acne in 3 weeks\"],
+      hooks: [`Your acne is a gut problem, not a skin problem`, `Why no skincare routine will fix gut-related breakouts`, `The gut reset that cleared stubborn acne in 3 weeks`],
       keywords: ['gut skin axis', 'microbiome acne', 'leaky gut acne', 'probiotic skin', 'gut reset skin', 'probiotics skin health'],
       example_post: `Your acne might not be a skincare problem. It might be a gut problem.nnThe gut-skin axis: Your gut contains 70% of your immune system. When balance tips toward harmful bacteria, inflammation travels through your bloodstream and surfaces on your skin.nnSigns your skin issues are gut-related:n1. Acne that doesn't respond to topical treatmentsn2. Eczema that flares with certain foodsn3. Bloating and breakouts happen on the same daysnnLeaky gut pathway: Bad diet → harmful bacteria overgrow → gut wall becomes permeable → toxins enter bloodstream → skin inflammationnnProbiotic foods: Yogurt with live cultures, kimchi, sauerkraut, kefir, miso, tempehnn7-day gut reset:nDays 1-2: Cut sugar and alcohol completelynDays 3-4: Add one probiotic food per daynDays 5-6: Add prebiotic fiber: garlic, onion, banana, oatsnDay 7: Evaluate skin texture, inflammation, energy`
     }
