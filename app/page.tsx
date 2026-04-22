@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import NextImage from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Calendar, Zap, Image as ImageIcon, Loader2, Download, ArrowLeft, PenTool, Layout, Target, MessageSquare, FileText, Key, Save, Upload, Edit2, Check, X, Copy, Wand2, RefreshCw, Settings, Camera, Undo, Redo, User, Trash2, FolderOpen, Plus, Eye, Database } from 'lucide-react';
+import { Sparkles, Calendar, Zap, Image as ImageIcon, Loader2, Download, ArrowLeft, PenTool, Layout, Target, MessageSquare, FileText, Key, Save, Upload, Edit2, Check, X, Copy, Wand2, RefreshCw, Settings, Camera, Undo, Redo, User, Trash2, FolderOpen, Plus, Eye, Database, ChevronDown } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { nuSkinProducts } from './nuskin-data';
@@ -35,22 +35,38 @@ const callAI = async (
     headers['x-api-key'] = userApiKey;
   }
 
-  const res = await fetch('/api/generate', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ model, contents, config }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 180000); // 180s timeout
 
-  if (!res.ok) {
-    const errorBody = await res.json().catch(() => ({ error: 'Unknown error' }));
-    const error: any = new Error(errorBody.error || `API Error ${res.status}`);
-    error.status = res.status;
-    error.code = errorBody.status || res.status;
-    error.error = errorBody.error_details || { code: res.status, status: res.status >= 500 ? 'UNAVAILABLE' : 'FAILED' };
-    throw error;
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ model, contents, config }),
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      const errorBody = await res.json().catch(() => ({ error: 'Unknown error' }));
+      const error: any = new Error(errorBody.error || `API Error ${res.status}`);
+      error.status = res.status;
+      error.code = errorBody.status || res.status;
+      error.error = errorBody.error_details || { code: res.status, status: res.status >= 500 ? 'UNAVAILABLE' : 'FAILED' };
+      throw error;
+    }
+
+    return res.json();
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      const timeoutError: any = new Error('Request timed out. The AI took too long to respond.');
+      timeoutError.status = 504;
+      throw timeoutError;
+    }
+    throw err;
   }
-
-  return res.json();
 };
 
 
@@ -86,7 +102,7 @@ Content MUST feel 100% human-written, never AI-generated.
 
 [ OUTPUT ] 2-3 variations per request. Label platform/format. Explain hook psychology in Myanmar. Flag short shelf-life slang.
 
-Energy: confident + warm + ကြည်ချင်စဖွယ် + မြန်မာ ချိုချိုလေး humor\\n\\n`;
+Energy: confident + warm + ကြည်ချင်စဖွယ် + မြန်မာ ချိုချိုလေး humornn`;
 
 interface UserProfile {
   id: string;
@@ -168,27 +184,27 @@ const BEAUTY_HEALTH_TRAINING_DATA = {
       viral_score: 5, content_type: 'myth_bust_educational', target_emotion: 'relief_and_aha_moment',
       recommended_format: 'Myth-bust carousel + before/after text comparison',
       why_viral: 'Everyone has experienced "my skincare stopped working" — massive relatability drives saves and shares.',
-      hooks: ['Over-exfoliating is destroying your skin and you don\'t even know it', 'Why your expensive skincare isn\'t working anymore', 'The real reason your skin is always dry'],
+      hooks: ['Over-exfoliating is destroying your skin and you don't even know it', 'Why your expensive skincare isn't working anymore', 'The real reason your skin is always dry'],
       keywords: ['skin barrier', 'ceramide', 'over-exfoliation', 'sensitive skin', 'barrier repair', 'lipid layer', 'skin inflammation'],
-      example_post: 'Your moisturizer stopped working? Your skin barrier might be damaged — and your skincare routine could be the cause.\n\nSigns your barrier is broken:\n• Skin feels tight even after moisturizing\n• Redness and sensitivity to products you used to tolerate\n• Breakouts in unusual spots\n• Burning sensation when applying serums\n\nSurprising causes:\n1. Over-exfoliating (2x a week max)\n2. Using too many active ingredients at once\n3. Hot showers — they strip your lipid layer\n\nThe fix: Stop all actives. Switch to a fragrance-free gentle cleanser. Layer a ceramide moisturizer. Give it 2 weeks.\n\nMyth: If it tingles, it\'s working. NO — tingling = irritation = barrier damage.'
+      example_post: 'Your moisturizer stopped working? Your skin barrier might be damaged — and your skincare routine could be the cause.nnSigns your barrier is broken:n• Skin feels tight even after moisturizingn• Redness and sensitivity to products you used to toleraten• Breakouts in unusual spotsn• Burning sensation when applying serumsnnSurprising causes:n1. Over-exfoliating (2x a week max)n2. Using too many active ingredients at oncen3. Hot showers — they strip your lipid layernnThe fix: Stop all actives. Switch to a fragrance-free gentle cleanser. Layer a ceramide moisturizer. Give it 2 weeks.nnMyth: If it tingles, it's working. NO — tingling = irritation = barrier damage.'
     },
     {
       id: 'topic_002', category: 'skincare', title: 'SPF myths that are aging your skin faster',
       viral_score: 5, content_type: 'myth_bust', target_emotion: 'urgency_and_shock',
       recommended_format: 'Myth vs Fact listicle + infographic caption',
       why_viral: 'Sunscreen is the #1 anti-aging product yet most people use it wrong. High stakes = high share rate.',
-      hooks: ['SPF 50 is not double the protection of SPF 30', 'You\'re aging faster because of this sunscreen mistake', 'Dark skin needs sunscreen too — here\'s why'],
+      hooks: ['SPF 50 is not double the protection of SPF 30', 'You're aging faster because of this sunscreen mistake', 'Dark skin needs sunscreen too — here's why'],
       keywords: ['sunscreen', 'SPF', 'UV protection', 'anti-aging', 'photoaging', 'UVA', 'UVB', 'broad spectrum'],
-      example_post: 'Sunscreen myths that are aging your skin right now:\n\nMYTH: SPF 50 = double the protection of SPF 30\nFACT: SPF 30 blocks 97%. SPF 50 blocks 98%. The real difference? How long before you reapply.\n\nMYTH: Dark skin doesn\'t need sunscreen\nFACT: UV damage causes hyperpigmentation, skin cancer, and premature aging on ALL skin tones.\n\nMYTH: My foundation has SPF so I\'m covered\nFACT: You\'d need to apply 7x your normal foundation amount to get the labeled SPF.\n\nThe rule: Apply every morning. Reapply every 2 hours outdoors.'
+      example_post: 'Sunscreen myths that are aging your skin right now:nnMYTH: SPF 50 = double the protection of SPF 30nFACT: SPF 30 blocks 97%. SPF 50 blocks 98%. The real difference? How long before you reapply.nnMYTH: Dark skin doesn't need sunscreennFACT: UV damage causes hyperpigmentation, skin cancer, and premature aging on ALL skin tones.nnMYTH: My foundation has SPF so I'm coverednFACT: You'd need to apply 7x your normal foundation amount to get the labeled SPF.nnThe rule: Apply every morning. Reapply every 2 hours outdoors.'
     },
     {
       id: 'topic_003', category: 'nutrition', title: 'Foods that secretly cause skin inflammation',
       viral_score: 5, content_type: 'educational_list', target_emotion: 'surprise_and_actionable_relief',
       recommended_format: 'Countdown list with swap suggestions',
       why_viral: 'Food-skin connection is extremely shareable. People are shocked by hidden culprits. Swap format makes it actionable.',
-      hooks: ['The breakfast food that\'s making your acne worse', '6 foods your dermatologist quietly avoids', 'Cut these 6 foods for clearer skin in 3 days'],
+      hooks: ['The breakfast food that's making your acne worse', '6 foods your dermatologist quietly avoids', 'Cut these 6 foods for clearer skin in 3 days'],
       keywords: ['anti-inflammatory diet', 'skin food', 'acne diet', 'gut skin connection', 'dairy acne', 'sugar acne', 'omega-6 inflammation'],
-      example_post: 'The food in your breakfast might be why your skin won\'t clear up.\n\nFoods silently inflaming your skin:\n1. Refined sugar → spikes insulin → triggers excess sebum → breakouts (Swap: Berries + dark chocolate)\n2. Dairy milk → contains hormones that stimulate oil glands (Swap: Oat milk)\n3. Vegetable oils → high omega-6 → promotes inflammation (Swap: Olive oil)\n4. White bread & white rice → high glycemic → insulin spike (Swap: Sweet potato, quinoa)\n5. Alcohol → dehydrates skin, depletes zinc (Swap: Sparkling water with lemon)\n6. Processed snacks → trans fats → disrupt fatty acid balance (Swap: Nuts, seeds, hummus)\n\n3-day skin reset: Eliminate all 6. Add salmon, leafy greens, and zinc-rich pumpkin seeds.'
+      example_post: 'The food in your breakfast might be why your skin won't clear up.nnFoods silently inflaming your skin:n1. Refined sugar → spikes insulin → triggers excess sebum → breakouts (Swap: Berries + dark chocolate)n2. Dairy milk → contains hormones that stimulate oil glands (Swap: Oat milk)n3. Vegetable oils → high omega-6 → promotes inflammation (Swap: Olive oil)n4. White bread & white rice → high glycemic → insulin spike (Swap: Sweet potato, quinoa)n5. Alcohol → dehydrates skin, depletes zinc (Swap: Sparkling water with lemon)n6. Processed snacks → trans fats → disrupt fatty acid balance (Swap: Nuts, seeds, hummus)nn3-day skin reset: Eliminate all 6. Add salmon, leafy greens, and zinc-rich pumpkin seeds.'
     },
     {
       id: 'topic_004', category: 'nutrition', title: 'Collagen-boosting foods vs collagen supplements — the truth',
@@ -197,52 +213,52 @@ const BEAUTY_HEALTH_TRAINING_DATA = {
       why_viral: 'Collagen supplements are a billion-dollar market. The nuanced truth surprises people and drives debate.',
       hooks: ['Your body destroys collagen supplements before they reach your skin', 'Why vitamin C is better than collagen powder', 'The truth about collagen supplements nobody tells you'],
       keywords: ['collagen supplement', 'collagen food', 'anti-aging nutrition', 'vitamin C skin', 'collagen peptides', 'proline', 'glycine'],
-      example_post: 'Spending money on collagen supplements? Here\'s what you actually need to know.\n\nWhat collagen does: Keeps skin firm, plump, and bouncy. After 25, your body produces 1% less each year.\n\nThe supplement truth: When you swallow collagen, your stomach breaks it into amino acids. Your body reassembles them wherever it decides — not necessarily your skin.\n\nFoods that directly boost collagen production:\n• Oranges, kiwi, bell peppers → Vitamin C (essential co-factor)\n• Pumpkin seeds, chickpeas → Zinc\n• Dark chocolate, sesame → Copper\n• Bone broth, chicken skin → Proline (collagen precursor)\n• Egg whites → Glycine + proline\n\nThe verdict: A Vitamin C-rich diet is the most evidence-backed collagen strategy.'
+      example_post: 'Spending money on collagen supplements? Here's what you actually need to know.nnWhat collagen does: Keeps skin firm, plump, and bouncy. After 25, your body produces 1% less each year.nnThe supplement truth: When you swallow collagen, your stomach breaks it into amino acids. Your body reassembles them wherever it decides — not necessarily your skin.nnFoods that directly boost collagen production:n• Oranges, kiwi, bell peppers → Vitamin C (essential co-factor)n• Pumpkin seeds, chickpeas → Zincn• Dark chocolate, sesame → Coppern• Bone broth, chicken skin → Proline (collagen precursor)n• Egg whites → Glycine + prolinennThe verdict: A Vitamin C-rich diet is the most evidence-backed collagen strategy.'
     },
     {
       id: 'topic_005', category: 'mental_health', title: 'Stress and skin — the cortisol-acne connection',
       viral_score: 5, content_type: 'science_explainer_empathy', target_emotion: 'validation_and_hope',
       recommended_format: 'Science explainer + mini stress-skin protocol',
-      why_viral: 'Stress is universal. The mind-skin connection validates what people feel but can\'t explain. "This explains everything" posts drive massive saves.',
-      hooks: ['Your stress is breaking out on your face', 'Why your skin gets worse during hard weeks', 'No product will fix stress-induced acne — here\'s what will'],
+      why_viral: 'Stress is universal. The mind-skin connection validates what people feel but can't explain. "This explains everything" posts drive massive saves.',
+      hooks: ['Your stress is breaking out on your face', 'Why your skin gets worse during hard weeks', 'No product will fix stress-induced acne — here's what will'],
       keywords: ['cortisol acne', 'stress skin', 'mind skin connection', 'holistic skincare', 'hormonal acne stress', 'sebum cortisol'],
-      example_post: 'If your skin gets worse when life gets harder — that\'s not a coincidence.\n\nWhen you\'re stressed, cortisol spikes. Cortisol tells your skin to produce more oil. More oil = clogged pores = breakouts. It also slows cell turnover, causing dullness, and triggers inflammation that worsens eczema, rosacea, and psoriasis.\n\nNo new serum won\'t fix stress-induced breakouts. Your nervous system needs to calm first.\n\nStress-skin reset (5 minutes):\n• Morning: 4-7-8 breathing × 3 rounds before checking your phone\n• Evening: No screens 30 min before bed\n• Daily: 2L of water. Cortisol is more damaging when you\'re dehydrated\n• Weekly: One thing you genuinely enjoy — not productive, just joyful\n\nYour skin is a mirror of your internal state. Being kind to yourself IS skincare.'
+      example_post: 'If your skin gets worse when life gets harder — that's not a coincidence.nnWhen you're stressed, cortisol spikes. Cortisol tells your skin to produce more oil. More oil = clogged pores = breakouts. It also slows cell turnover, causing dullness, and triggers inflammation that worsens eczema, rosacea, and psoriasis.nnNo new serum won't fix stress-induced breakouts. Your nervous system needs to calm first.nnStress-skin reset (5 minutes):n• Morning: 4-7-8 breathing × 3 rounds before checking your phonen• Evening: No screens 30 min before bedn• Daily: 2L of water. Cortisol is more damaging when you're dehydratedn• Weekly: One thing you genuinely enjoy — not productive, just joyfulnnYour skin is a mirror of your internal state. Being kind to yourself IS skincare.'
     },
     {
-      id: 'topic_006', category: 'mental_health', title: 'Sleep deprivation\'s visible effects on your appearance',
+      id: 'topic_006', category: 'mental_health', title: 'Sleep deprivation's visible effects on your appearance',
       viral_score: 4, content_type: 'motivational_educational', target_emotion: 'motivating_shock',
       recommended_format: 'Visual effects list + sleep optimization tips',
       why_viral: 'Sleep beauty is a concept people know but underestimate. Specific biological details turn vague advice into compelling must-change motivation.',
-      hooks: ['Your skin ages faster when you sleep less than 6 hours', '6 things sleep deprivation is doing to your face right now', 'Free anti-aging treatment you\'re skipping every night'],
+      hooks: ['Your skin ages faster when you sleep less than 6 hours', '6 things sleep deprivation is doing to your face right now', 'Free anti-aging treatment you're skipping every night'],
       keywords: ['beauty sleep', 'sleep skin', 'HGH skin repair', 'collagen sleep', 'circadian rhythm skin', 'undereye circles sleep'],
-      example_post: '"I\'ll sleep when I\'m dead" — your skin is aging faster because of this mindset.\n\nWhat happens when you sleep:\nHours 1-4: Melatonin rises, cell damage slows.\nHours 5-8: Human Growth Hormone peaks → collagen production accelerates → skin cells regenerate.\n\n6 signs of chronic sleep deprivation:\n1. Dull, grey-toned skin (slowed cell turnover)\n2. Puffy eyes (fluid redistribution)\n3. Deeper fine lines that don\'t bounce back\n4. Breakouts along jawline (cortisol spike)\n5. Darker undereye circles (blood vessel dilation)\n6. Dry, dehydrated patches\n\n3 sleep habits that ARE skincare:\n• Cool room (18-19°C) = deeper sleep = more HGH release\n• Silk pillowcase = less friction = fewer morning creases\n• Consistent sleep time = circadian rhythm = predictable skin repair'
+      example_post: '"I'll sleep when I'm dead" — your skin is aging faster because of this mindset.nnWhat happens when you sleep:nHours 1-4: Melatonin rises, cell damage slows.nHours 5-8: Human Growth Hormone peaks → collagen production accelerates → skin cells regenerate.nn6 signs of chronic sleep deprivation:n1. Dull, grey-toned skin (slowed cell turnover)n2. Puffy eyes (fluid redistribution)n3. Deeper fine lines that don't bounce backn4. Breakouts along jawline (cortisol spike)n5. Darker undereye circles (blood vessel dilation)n6. Dry, dehydrated patchesnn3 sleep habits that ARE skincare:n• Cool room (18-19°C) = deeper sleep = more HGH releasen• Silk pillowcase = less friction = fewer morning creasesn• Consistent sleep time = circadian rhythm = predictable skin repair'
     },
     {
-      id: 'topic_007', category: 'body_wellness', title: 'Hydration myths — you\'re probably not drinking water correctly',
+      id: 'topic_007', category: 'body_wellness', title: 'Hydration myths — you're probably not drinking water correctly',
       viral_score: 5, content_type: 'myth_bust_practical', target_emotion: 'surprise_and_practical_insight',
       recommended_format: 'Myth-bust format + correct hydration method',
-      why_viral: '"Drink more water" is the most repeated beauty advice. Showing it\'s more nuanced surprises everyone. Drives shares and saves.',
-      hooks: ['8 glasses a day is wrong — here\'s your actual hydration number', 'Why drinking more water isn\'t clearing your skin', 'The hydration mistake keeping your skin dry'],
+      why_viral: '"Drink more water" is the most repeated beauty advice. Showing it's more nuanced surprises everyone. Drives shares and saves.',
+      hooks: ['8 glasses a day is wrong — here's your actual hydration number', 'Why drinking more water isn't clearing your skin', 'The hydration mistake keeping your skin dry'],
       keywords: ['skin hydration', 'electrolytes skin', 'hydration myths', 'cellular hydration', 'dewy skin', 'intracellular hydration'],
-      example_post: '"Drink 8 glasses of water a day" — this advice is oversimplified and might be why your skin is still dry.\n\nMYTH: Everyone needs 8 glasses daily\nFACT: Your needs depend on weight, climate, activity level, and diet.\n\nMYTH: Water alone hydrates your skin\nFACT: Without electrolytes, water moves through you without fully hydrating cells. Intracellular hydration makes skin plump.\n\nMYTH: Crystal clear urine = optimal hydration\nFACT: Pale yellow is ideal. Clear urine means you\'re flushing electrolytes.\n\nHydrate smarter:\n• Add cucumber, lemon, or a pinch of sea salt to water\n• Eat water-rich foods: watermelon, cucumber, celery\n• Electrolyte boost: coconut water, banana, leafy greens'
+      example_post: '"Drink 8 glasses of water a day" — this advice is oversimplified and might be why your skin is still dry.nnMYTH: Everyone needs 8 glasses dailynFACT: Your needs depend on weight, climate, activity level, and diet.nnMYTH: Water alone hydrates your skinnFACT: Without electrolytes, water moves through you without fully hydrating cells. Intracellular hydration makes skin plump.nnMYTH: Crystal clear urine = optimal hydrationnFACT: Pale yellow is ideal. Clear urine means you're flushing electrolytes.nnHydrate smarter:n• Add cucumber, lemon, or a pinch of sea salt to watern• Eat water-rich foods: watermelon, cucumber, celeryn• Electrolyte boost: coconut water, banana, leafy greens'
     },
     {
       id: 'topic_008', category: 'body_wellness', title: 'Lymphatic drainage — the underrated beauty hack',
       viral_score: 4, content_type: 'how_to_guide', target_emotion: 'discovery_and_empowerment',
       recommended_format: 'Science explainer + step-by-step routine',
       why_viral: 'Trending wellness topic with high visual interest, immediate DIY application, and satisfying before/after potential.',
-      hooks: ['Why your face is puffy every morning — and the 3-minute fix', 'Gua sha actually works — here\'s the science behind it', 'The morning routine that drains your face in 3 minutes'],
+      hooks: ['Why your face is puffy every morning — and the 3-minute fix', 'Gua sha actually works — here's the science behind it', 'The morning routine that drains your face in 3 minutes'],
       keywords: ['lymphatic drainage', 'gua sha', 'facial massage', 'face depuff', 'morning beauty routine', 'jade roller'],
-      example_post: 'Your face is puffy every morning and no product is fixing it.\n\nYour lymphatic system is your body\'s drainage network. It removes toxins, excess fluid, and cellular waste. When sluggish, fluid pools in your face.\n\nSigns your facial lymph is backed up:\n• Puffy eyes and cheeks every morning\n• Dull, grey-looking skin\n• Persistent dark circles\n\n3-minute morning drainage routine:\n1. Cold water: Splash cold water × 10. Temperature change stimulates lymph.\n2. Gentle massage: Press lymph nodes on neck sides downward × 5. Opens the drain.\n3. Gua sha sweep: Neck up to jawline, jawline to ear, cheekbone to temple. Light pressure. 3 sweeps each.'
+      example_post: 'Your face is puffy every morning and no product is fixing it.nnYour lymphatic system is your body's drainage network. It removes toxins, excess fluid, and cellular waste. When sluggish, fluid pools in your face.nnSigns your facial lymph is backed up:n• Puffy eyes and cheeks every morningn• Dull, grey-looking skinn• Persistent dark circlesnn3-minute morning drainage routine:n1. Cold water: Splash cold water × 10. Temperature change stimulates lymph.n2. Gentle massage: Press lymph nodes on neck sides downward × 5. Opens the drain.n3. Gua sha sweep: Neck up to jawline, jawline to ear, cheekbone to temple. Light pressure. 3 sweeps each.'
     },
     {
       id: 'topic_009', category: 'skincare', title: 'Retinol beginner guide — why most people quit too early',
       viral_score: 5, content_type: 'comprehensive_guide', target_emotion: 'patience_and_confidence',
-      recommended_format: 'Beginner guide + timeline + do\'s and don\'ts',
+      recommended_format: 'Beginner guide + timeline + do's and don'ts',
       why_viral: 'Retinol is the most-searched skincare ingredient. Quitting during the purge phase is the #1 mistake — drives massive saves as reference guide.',
       hooks: ['Most people quit retinol right before it starts working', 'The retinol purge is supposed to happen', 'Week-by-week: what retinol actually does to your skin'],
       keywords: ['retinol beginner', 'retinol purge', 'retinol sandwich method', 'anti-aging retinol', 'skin cell turnover'],
-      example_post: 'You bought retinol. Your skin freaked out. You stopped. That was the biggest mistake.\n\nWeek-by-week reality:\nWeeks 1-2: Dryness, flaking, mild irritation. Normal.\nWeeks 3-4: Purging — old debris rises to surface. STILL NORMAL.\nWeeks 5-8: Skin calms. Texture improving.\nWeeks 9-12: The glow people post about begins.\n\nHow to start without destroying your skin:\n• Frequency: 1x/week → 2x → 3x. Never daily to start.\n• Sandwich method: moisturizer → retinol → moisturizer\n• Always PM only. Retinol degrades in sunlight.\n• Start at 0.025% or 0.05%. Not 1%.\n\nNever combine with:\n• AHA/BHA same night\n• Vitamin C same PM application\n• Benzoyl peroxide (deactivates retinol)\n\nSPF every morning when using retinol. Non-negotiable.'
+      example_post: 'You bought retinol. Your skin freaked out. You stopped. That was the biggest mistake.nnWeek-by-week reality:nWeeks 1-2: Dryness, flaking, mild irritation. Normal.nWeeks 3-4: Purging — old debris rises to surface. STILL NORMAL.nWeeks 5-8: Skin calms. Texture improving.nWeeks 9-12: The glow people post about begins.nnHow to start without destroying your skin:n• Frequency: 1x/week → 2x → 3x. Never daily to start.n• Sandwich method: moisturizer → retinol → moisturizern• Always PM only. Retinol degrades in sunlight.n• Start at 0.025% or 0.05%. Not 1%.nnNever combine with:n• AHA/BHA same nightn• Vitamin C same PM applicationn• Benzoyl peroxide (deactivates retinol)nnSPF every morning when using retinol. Non-negotiable.'
     },
     {
       id: 'topic_010', category: 'body_wellness', title: 'Gut health and skin — the microbiome-acne connection',
@@ -251,7 +267,7 @@ const BEAUTY_HEALTH_TRAINING_DATA = {
       why_viral: 'Gut-skin axis is one of the fastest-growing beauty science topics. Explains why topical-only approaches fail — huge paradigm shift.',
       hooks: ['Your acne is a gut problem, not a skin problem', 'Why no skincare routine will fix gut-related breakouts', 'The gut reset that cleared stubborn acne in 3 weeks'],
       keywords: ['gut skin axis', 'microbiome acne', 'leaky gut acne', 'probiotic skin', 'gut reset skin', 'probiotics skin health'],
-      example_post: 'Your acne might not be a skincare problem. It might be a gut problem.\n\nThe gut-skin axis: Your gut contains 70% of your immune system. When balance tips toward harmful bacteria, inflammation travels through your bloodstream and surfaces on your skin.\n\nSigns your skin issues are gut-related:\n1. Acne that doesn\'t respond to topical treatments\n2. Eczema that flares with certain foods\n3. Bloating and breakouts happen on the same days\n\nLeaky gut pathway: Bad diet → harmful bacteria overgrow → gut wall becomes permeable → toxins enter bloodstream → skin inflammation\n\nProbiotic foods: Yogurt with live cultures, kimchi, sauerkraut, kefir, miso, tempeh\n\n7-day gut reset:\nDays 1-2: Cut sugar and alcohol completely\nDays 3-4: Add one probiotic food per day\nDays 5-6: Add prebiotic fiber: garlic, onion, banana, oats\nDay 7: Evaluate skin texture, inflammation, energy'
+      example_post: 'Your acne might not be a skincare problem. It might be a gut problem.nnThe gut-skin axis: Your gut contains 70% of your immune system. When balance tips toward harmful bacteria, inflammation travels through your bloodstream and surfaces on your skin.nnSigns your skin issues are gut-related:n1. Acne that doesn't respond to topical treatmentsn2. Eczema that flares with certain foodsn3. Bloating and breakouts happen on the same daysnnLeaky gut pathway: Bad diet → harmful bacteria overgrow → gut wall becomes permeable → toxins enter bloodstream → skin inflammationnnProbiotic foods: Yogurt with live cultures, kimchi, sauerkraut, kefir, miso, tempehnn7-day gut reset:nDays 1-2: Cut sugar and alcohol completelynDays 3-4: Add one probiotic food per daynDays 5-6: Add prebiotic fiber: garlic, onion, banana, oatsnDay 7: Evaluate skin texture, inflammation, energy'
     }
   ],
   content_types: ['educational', 'myth_bust', 'how_to', 'comparison', 'guide', 'science_explainer', 'motivational'],
@@ -271,7 +287,7 @@ const BEAUTY_HEALTH_TRAINING_DATA = {
     'Myth-busting — challenges commonly held beliefs',
     'Actionable — gives something to do immediately',
     'Saves trigger — information dense enough to save for later',
-    'Comment trigger — asks a question that\'s easy and compelling to answer',
+    'Comment trigger — asks a question that's easy and compelling to answer',
     'Share trigger — information the reader wants friends to know'
   ],
   hook_rules: [
@@ -508,25 +524,18 @@ export default function Dashboard() {
       error.error?.code === 503 ||
       error.error?.status === 'RESOURCE_EXHAUSTED' ||
       error.error?.status === 'UNAVAILABLE' ||
-      error.status === 500 ||
-      error.code === 500 ||
-      error.error?.code === 500 ||
       errorStr.includes('429') ||
       errorStr.includes('503') ||
-      errorStr.includes('500') ||
       errorStr.includes('quota') ||
       errorStr.includes('resource_exhausted') ||
       errorStr.includes('exhausted') ||
       errorStr.includes('unavailable') ||
-      errorStr.includes('internal error') ||
       errorStr.includes('high demand') ||
       message.includes('429') ||
       message.includes('503') ||
-      message.includes('500') ||
       message.includes('quota') ||
       message.includes('exhausted') ||
       message.includes('unavailable') ||
-      message.includes('internal error') ||
       message.includes('high demand')
     );
   };
@@ -541,15 +550,17 @@ export default function Dashboard() {
                           errorStr.includes('unavailable') ||
                           errorStr.includes('429');
 
-      // For high demand, we can afford more retries with longer backoff
-      // If retries is explicitly set low (like 1), we respect it for fast fallback
-      const effectiveRetries = (isHighDemand && retries > 1) ? Math.max(retries, 5) : retries;
+      // Cap retries to prevent massive UI freezes (stucking)
+      const effectiveRetries = (isHighDemand && retries > 1) ? Math.min(retries, 2) : retries;
       
       if (effectiveRetries > 0 && isRetryableError(error)) {
-        const actualDelay = (isHighDemand && retries > 1) ? Math.max(delay, 5000) : delay;
-        const nextDelay = (isHighDemand && retries > 1) ? actualDelay * 2 : actualDelay * 1.5;
+        const actualDelay = (isHighDemand && retries > 1) ? Math.min(delay, 3000) : delay;
+        const nextDelay = Math.min(actualDelay * 1.5, 5000); // Cap next delay
         
         console.log(`Retryable error encountered (${isHighDemand ? 'High Demand' : 'General'}). Retrying in ${actualDelay}ms... (${effectiveRetries} retries left)`);
+        
+        // Let the user know the AI is retrying so they don't think it's stuck
+        setToastMessage(`API busy. Retrying... (${effectiveRetries} attempts left)`);
         
         await new Promise(resolve => setTimeout(resolve, actualDelay));
         return withRetry(fn, effectiveRetries - 1, nextDelay);
@@ -632,7 +643,9 @@ export default function Dashboard() {
           if (found.gemini_api_key) {
             setUserApiKey(found.gemini_api_key);
             setHasKey(true);
-          } else {
+          } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
             // Profile exists but no API key — check server fallback
             try {
               const res = await fetch('/api/generate', {
@@ -666,6 +679,8 @@ export default function Dashboard() {
     if (profile.gemini_api_key) {
       setUserApiKey(profile.gemini_api_key);
       setHasKey(true);
+    } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
     } else {
       // Check if server has a fallback key
       try {
@@ -772,7 +787,7 @@ export default function Dashboard() {
     const imageUrls: string[] = [];
     for (let i = 0; i < productImages.length; i++) {
       const base64 = productImages[i];
-      const match = base64.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+      const match = base64.match(/^data:(image/[a-zA-Z+]+);base64,(.+)$/);
       if (match) {
         const byteString = atob(match[2]);
         const ab = new ArrayBuffer(byteString.length);
@@ -844,7 +859,9 @@ export default function Dashboard() {
           .update(payload)
           .eq('id', editingTemplateId);
         if (error) throw error;
-      } else {
+      } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
         // Insert new
         const { error } = await supabase
           .from('campaign_settings')
@@ -902,7 +919,9 @@ export default function Dashboard() {
           }
         }
         setProductImages(loadedImages);
-      } else {
+      } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
         setProductImages([]);
       }
 
@@ -1041,7 +1060,7 @@ export default function Dashboard() {
       const uploadedNewUrls: string[] = [];
       for (let i = 0; i < editFormData.newImages.length; i++) {
         const base64 = editFormData.newImages[i];
-        const match = base64.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+        const match = base64.match(/^data:(image/[a-zA-Z+]+);base64,(.+)$/);
         if (match) {
           const byteString = atob(match[2]);
           const ab = new ArrayBuffer(byteString.length);
@@ -1136,7 +1155,9 @@ export default function Dashboard() {
         if (logoImage) {
           const withLogo = await applyLogoOverlay(generatedImage, logoImage, logoPosition, logoScale, logoOpacity);
           setFinalImageWithLogo(withLogo);
-        } else {
+        } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
           setFinalImageWithLogo(generatedImage);
         }
       }
@@ -1153,6 +1174,8 @@ export default function Dashboard() {
       setToastMessage('API Key invalid or not found. Please update your API key in your profile settings.');
     } else if (isRetryableError(error)) {
       setToastMessage('High demand or quota exceeded. Please wait a moment and try again.');
+    } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
     } else {
       setToastMessage(error.message || defaultMessage);
     }
@@ -1172,7 +1195,9 @@ export default function Dashboard() {
             height *= maxWidth / width;
             width = maxWidth;
           }
-        } else {
+        } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
           if (height > maxHeight) {
             width *= maxHeight / height;
             height = maxHeight;
@@ -1307,7 +1332,7 @@ export default function Dashboard() {
       
       if (productImages.length > 0) {
         productImages.forEach(img => {
-          const match = img.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+          const match = img.match(/^data:(image/[a-zA-Z+]+);base64,(.+)$/);
           if (match) {
             contents.parts.push({
               inlineData: {
@@ -1407,7 +1432,7 @@ export default function Dashboard() {
       const contents: any = { parts: [] };
       if (productImages.length > 0) {
         const img = productImages[0];
-        const match = img.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+        const match = img.match(/^data:(image/[a-zA-Z+]+);base64,(.+)$/);
         if (match) {
           contents.parts.push({ inlineData: { mimeType: match[1], data: match[2] } });
         }
@@ -1467,7 +1492,7 @@ export default function Dashboard() {
       Analyze this product and make PROFESSIONAL-LEVEL strategic decisions for a social media campaign.
 
       Product Name: "${productName}"
-      ${productContext ? `Product Knowledge:\n${productContext}` : ''}
+      ${productContext ? `Product Knowledge:n${productContext}` : ''}
       
       Current Year: ${currentYear}
 
@@ -1498,7 +1523,7 @@ export default function Dashboard() {
       const contents: any = { parts: [] };
       if (productImages.length > 0) {
         productImages.slice(0, 2).forEach(img => {
-          const match = img.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+          const match = img.match(/^data:(image/[a-zA-Z+]+);base64,(.+)$/);
           if (match) {
             contents.parts.push({ inlineData: { mimeType: match[1], data: match[2] } });
           }
@@ -1612,8 +1637,8 @@ export default function Dashboard() {
           'sirtuins — the longevity proteins in your skin cells',
           'circadian rhythm skincare — why timing your routine matters',
           'skin barrier repair timeline — what to expect week by week',
-          'the 14-day skin cell turnover myth — it\'s actually 28-40 days',
-          'how your skin\'s acid mantle works like an invisible shield',
+          'the 14-day skin cell turnover myth — it's actually 28-40 days',
+          'how your skin's acid mantle works like an invisible shield',
           'transepidermal water loss (TEWL) — the metric that predicts aging',
           'melanin biology — why hyperpigmentation is harder to treat than wrinkles',
           'sebaceous filaments vs blackheads — stop squeezing the wrong thing',
@@ -1714,27 +1739,27 @@ export default function Dashboard() {
           'neck skincare — the most neglected aging zone',
           'hand aging — how to protect and reverse',
           'lip care science — why lips peel and crack',
-          'phone screen bacteria — your face\'s secret enemy',
+          'phone screen bacteria — your face's secret enemy',
           'tap water minerals that secretly irritate sensitive skin',
           'laundry detergent residue causing body eczema',
           'gym equipment bacteria and body breakouts',
         ],
         'trending_controversial': [
-          'stretch marks — what actually works and what doesn\'t',
-          'cellulite — the honest science (hint: it\'s not toxins)',
+          'stretch marks — what actually works and what doesn't',
+          'cellulite — the honest science (hint: it's not toxins)',
           'scalp health and hair growth — seborrheic dermatitis',
           'caffeine topically vs internally for under-eye circles',
           'tamanu oil for acne scars',
           'rosehip oil vs argan oil — which is better for your skin type',
           'mushroom extracts for skin — reishi, chaga, tremella',
           'how dehydration mimics aging — skin turgor test',
-          'sunscreen reapplication — the 2-hour rule and when it doesn\'t apply',
+          'sunscreen reapplication — the 2-hour rule and when it doesn't apply',
           'the "skinimalism" movement — less products, better skin?',
           'tretinoin vs retinol — is prescription always better?',
           'DIY skincare dangers — lemon juice, baking soda, and other myths',
           'Korean 10-step routine — genius or overkill in 2025?',
           'glass skin vs healthy skin — are they the same thing?',
-          'why expensive skincare isn\'t always better — the markup truth',
+          'why expensive skincare isn't always better — the markup truth',
           'natural vs synthetic ingredients — which is actually safer?',
         ],
       };
@@ -1783,7 +1808,7 @@ export default function Dashboard() {
       const contentPillarRotation = [
         'Skincare — skin barrier, SPF, retinol, acne, dark spots, oily skin, moisturizer, ingredients',
         'Beauty from within — collagen foods, anti-inflammatory eating, hydration, vitamins for skin',
-        'Women\'s health — hormonal acne, period skin changes, PCOS skin, hair loss, vaginal health basics',
+        'Women's health — hormonal acne, period skin changes, PCOS skin, hair loss, vaginal health basics',
         'Mind and skin — stress breakouts, cortisol acne, sleep and skin, self-care routines',
         'Body wellness — gut skin connection, lymphatic drainage, bloating, weight and hormones'
       ];
@@ -1805,7 +1830,7 @@ export default function Dashboard() {
         'ဒီ tip ကို screenshot ရိုက်ထားပြီး save လုပ်ထား!',
         'ဒီ post ကို skin care ချစ်တဲ့ သူငယ်ချင်းကို share လုပ်ပေးပါ',
         'မင်းဘယ် step မှာ အခက်ခဲဆုံးလဲ? Comment မှာ ပြောပြပါ',
-        'Before \/After ရှိရင် DM ပို့ပါ! Feature လုပ်ပေးမယ်'
+        'Before /After ရှိရင် DM ပို့ပါ! Feature လုပ်ပေးမယ်'
       ];
 
       // Dynamic Hero Theme — crypto-random selection
@@ -1832,12 +1857,12 @@ export default function Dashboard() {
 
       // Build the "NEVER REPEAT" blocklist from history
       const avoidanceBlock = topicHistory.length > 0
-        ? `\n\n⛔ ABSOLUTE REPETITION BAN — YOU MUST NOT REPEAT ANY OF THESE PREVIOUSLY GENERATED TOPICS:\n${topicHistory.map((t, i) => `${i + 1}. "${t}"`).join('\n')}\n\nThe above topics have ALREADY been generated. You MUST choose COMPLETELY DIFFERENT topics, angles, and approaches. If you repeat any of them, the generation is a FAILURE.\n`
+        ? `nn⛔ ABSOLUTE REPETITION BAN — YOU MUST NOT REPEAT ANY OF THESE PREVIOUSLY GENERATED TOPICS:n${topicHistory.map((t, i) => `${i + 1}. "${t}"`).join('n')}nnThe above topics have ALREADY been generated. You MUST choose COMPLETELY DIFFERENT topics, angles, and approaches. If you repeat any of them, the generation is a FAILURE.n`
         : '';
 
       // MANDATORY topics block — forces the AI to use specific pre-selected topics
       const mandatoryBlock = mandatoryTopics.length > 0
-        ? `\n🔒 MANDATORY TOPICS — You MUST use these exact topics for the first ${mandatoryTopics.length} days (adapt title to Burmese but keep the core subject):\n${mandatoryTopics.map((t, i) => `Day ${i + 1}: "${t}"`).join('\n')}\n\nFor remaining days, use these for inspiration:\n${inspirationTopics.map((t, i) => `${i + 1}. ${t}`).join('\n')}\n`
+        ? `n🔒 MANDATORY TOPICS — You MUST use these exact topics for the first ${mandatoryTopics.length} days (adapt title to Burmese but keep the core subject):n${mandatoryTopics.map((t, i) => `Day ${i + 1}: "${t}"`).join('n')}nnFor remaining days, use these for inspiration:n${inspirationTopics.map((t, i) => `${i + 1}. ${t}`).join('n')}n`
         : '';
 
       // First-generation freshness boost
@@ -1859,7 +1884,7 @@ export default function Dashboard() {
       Generation #${genCount} | Unique Creative Seed: ${randomSeed} | Time Slot: ${timeSlot} | Hour: ${hourSlot}
       ${firstGenBoost}
       CONTENT PILLARS (rotate across all ${standaloneDaysCount} days — cover at least 3 different pillars):
-      ${contentPillarRotation.map((p, i) => `${i + 1}. ${p}`).join('\n      ')}
+      ${contentPillarRotation.map((p, i) => `${i + 1}. ${p}`).join('n      ')}
       ${avoidanceBlock}
       ${mandatoryBlock}
       
@@ -1891,7 +1916,7 @@ export default function Dashboard() {
       - Always give specific numbers: "၆ မျိုး", "၃ ဆင့်", "၂ ပတ်" — vague advice does NOT get saved
       
       CTA PHRASES TO ROTATE (use a different one for each day):
-      ${ctaRotation.map((c, i) => `${i + 1}. "${c}"`).join('\n      ')}
+      ${ctaRotation.map((c, i) => `${i + 1}. "${c}"`).join('n      ')}
       
       CORE INSTRUCTIONS:
       4. Generate exactly ${standaloneDaysCount} days of content.
@@ -1984,7 +2009,7 @@ export default function Dashboard() {
     
     // Store summary of previous plan for avoidance
     if (planItems.length > 0) {
-      const prevSummary = planItems.map(item => `Day ${item.day}: ${item.title} (${item.format}) - ${item.hook}`).join('\n');
+      const prevSummary = planItems.map(item => `Day ${item.day}: ${item.title} (${item.format}) - ${item.hook}`).join('n');
       setPreviousPlanSummary(prevSummary);
     }
     
@@ -2095,25 +2120,25 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
       Content Pillars: "${contentPillars}"
       Call-to-Action Style: "${ctaStyle}"
       Post Formats: Exactly ${reelsCount} Reels (Video), exactly ${carouselCount} Carousels, and the remaining ${daysCount - reelsCount - carouselCount} as Single Images.
-      ${productContext ? `\nCRITICAL PRODUCT KNOWLEDGE:\n${productContext}\nEnsure all content respects these usage rules and target areas.` : ''}
+      ${productContext ? `nCRITICAL PRODUCT KNOWLEDGE:n${productContext}nEnsure all content respects these usage rules and target areas.` : ''}
 
       ${trendContext2026}
 
       === CREATIVE DIRECTION FOR THIS GENERATION (Generation #${currentGenCount}) ===
       
       MANDATORY CONTENT ANGLES (use these specific approaches):
-      ${selectedAngles.map((a, i) => `${i + 1}. ${a}`).join('\n')}
+      ${selectedAngles.map((a, i) => `${i + 1}. ${a}`).join('n')}
       
       CAMPAIGN STRATEGY: ${selectedStrategy}
       
       HOOK STYLES TO USE (mix these across days):
-      ${selectedHookStyles.map((h, i) => `${i + 1}. ${h}`).join('\n')}
+      ${selectedHookStyles.map((h, i) => `${i + 1}. ${h}`).join('n')}
       
       NARRATIVE ARC: ${selectedArc}
 
-      ${previousPlanSummary ? `\n=== CONTENT TO AVOID (previously generated — DO NOT repeat these topics or hooks) ===\n${previousPlanSummary}\n\nYou MUST create completely different topics, hooks, and angles from the above. Do NOT reuse any of these titles, hooks, or concepts even in rephrased form.\n` : ''}
+      ${previousPlanSummary ? `n=== CONTENT TO AVOID (previously generated — DO NOT repeat these topics or hooks) ===n${previousPlanSummary}nnYou MUST create completely different topics, hooks, and angles from the above. Do NOT reuse any of these titles, hooks, or concepts even in rephrased form.n` : ''}
       
-      ${isRegenerate ? `\nCRITICAL REGENERATION RULES:
+      ${isRegenerate ? `nCRITICAL REGENERATION RULES:
       - This is regeneration attempt #${currentGenCount}. The user was NOT satisfied with previous results.
       - You MUST generate COMPLETELY DIFFERENT topics, hooks, and content concepts.
       - Use DIFFERENT content angles, storytelling approaches, and creative hooks.
@@ -2283,7 +2308,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
       Platform: "${platform}"
       Content Pillars: "${contentPillars || 'Education, Lifestyle, Product Demo'}"
       CTA Style: "${ctaStyle}"
-      ${!isLifestyle && productContext ? `\nCRITICAL PRODUCT KNOWLEDGE:\n${productContext}\nEnsure the caption accurately reflects how and where the product is used.` : ''}
+      ${!isLifestyle && productContext ? `nCRITICAL PRODUCT KNOWLEDGE:n${productContext}nEnsure the caption accurately reflects how and where the product is used.` : ''}
       
       Post Details:
       Title: ${selectedDay.title}
@@ -2300,7 +2325,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
       6. NO LABELS: DO NOT include framework labels or structural words like "Hook:", "Attention:", "Interest:", "Desire:", "Action:", "Body:", or "Caption:". The text must flow naturally and be ready to copy-paste directly to social media.
       7. HASHTAGS: Include relevant, high-performing hashtags at the very end.
       8. VISUAL DIRECTION: Provide detailed visual/video instructions for the creator (these instructions should also be in Myanmar language). This MUST be returned in the separate "visualDirection" field, NOT in the "content" field.
-      ${currentAttempt > 1 ? `\n\nIMPORTANT: This is generation attempt #${currentAttempt}. Please provide a FRESH, MORE CREATIVE, and HIGHLY UNIQUE variation compared to standard responses. Try a different angle or a more captivating hook!` : ''}
+      ${currentAttempt > 1 ? `nnIMPORTANT: This is generation attempt #${currentAttempt}. Please provide a FRESH, MORE CREATIVE, and HIGHLY UNIQUE variation compared to standard responses. Try a different angle or a more captivating hook!` : ''}
       
       You MUST return exactly 1 highly optimized variation of the post.
       Return the response in JSON format matching this schema:
@@ -2398,7 +2423,9 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
         setPostVariations(variations);
         setPostHistory([variations[0].content]);
         setHistoryIndex(0);
-      } else {
+      } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
         console.error("Parsed data does not contain variations:", data);
         throw new Error("Invalid response format");
       }
@@ -2477,7 +2504,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
       Platform: "${platform}"
       Content Pillars: "${contentPillars || 'Education, Lifestyle, Product Demo'}"
       CTA Style: "${ctaStyle}"
-      ${!isLifestyle && productContext ? `\nCRITICAL PRODUCT KNOWLEDGE:\n${productContext}\nEnsure the caption accurately reflects how and where the product is used.` : ''}
+      ${!isLifestyle && productContext ? `nCRITICAL PRODUCT KNOWLEDGE:n${productContext}nEnsure the caption accurately reflects how and where the product is used.` : ''}
       
       Post Details:
       Title: ${selectedDay.title}
@@ -2577,7 +2604,9 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
           setPostHistory([variationData.content]);
           setHistoryIndex(0);
         }
-      } else {
+      } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
         console.error("Parsed data does not contain content:", data);
         throw new Error("Invalid response format");
       }
@@ -2748,7 +2777,9 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
           increment = prev < 50 ? 0.8 : prev < 80 ? 0.4 : 0.2; // ~15s
         } else if (selectedImageModel === 'gemini-2.5-flash-image-preview') {
           increment = prev < 50 ? 0.4 : prev < 80 ? 0.2 : 0.1; // ~30s
-        } else {
+        } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
           increment = prev < 50 ? 0.2 : prev < 80 ? 0.1 : 0.05; // ~60s
         }
         
@@ -2861,7 +2892,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
             sceneDescription = 'a clean, clinical-yet-beautiful setting that communicates scientific expertise and gentle care. Think a premium dermatology clinic meets a luxury spa. The environment feels trustworthy, precise, and deeply caring. Glass surfaces, water elements, and translucent materials create a sense of purity and transparency';
             sceneProps = 'science-meets-beauty props: crystal-clear water droplets on glass surfaces, a ceramic pipette dropper with visible serum, fresh aloe vera leaf cut open showing gel, cotton pads, a small mirror reflecting soft light, translucent gel textures, water beads, and the product as the hero centerpiece on a frosted glass surface';
             sceneLighting = 'bright, clean, and pure — soft studio lighting with a slight cool-blue undertone that communicates clinical trust. Subtle warm rim light adds dimension. Every surface gleams with clean light. Shot on Hasselblad X2D — medium format quality, incredible sharpness and detail on every water droplet and texture';
-            sceneColor = 'clean, pure palette — crystal clear, soft ice blue, pearl white, frosted glass tones, subtle silver. A touch of the product\'s accent color for brand alignment. Color grading: clean, bright, slightly cool, ultra-refined';
+            sceneColor = 'clean, pure palette — crystal clear, soft ice blue, pearl white, frosted glass tones, subtle silver. A touch of the product's accent color for brand alignment. Color grading: clean, bright, slightly cool, ultra-refined';
             sceneAngle = 'slightly elevated product-hero angle (30 degrees from above). Creates authority and trust. Symmetrical with the product perfectly centered';
           } else if (topicSignals.acne || topicSignals.oilySkin || topicSignals.darkSpots) {
             autoStyleName = 'Transformation Glow';
@@ -2886,11 +2917,11 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
             sceneAngle = 'straight-on graphic design composition optimized for Facebook feed visibility. Bold, clean, with large text-safe zones. The image reads clearly even at thumbnail size';
           } else if (topicSignals.howTo || topicSignals.bodyWellness) {
             autoStyleName = 'Step-by-Step Tutorial';
-            sceneDescription = 'a bright, clean, beautifully organized tutorial-style composition that feels like a premium beauty creator\'s content. The product is shown in a real-life application context — being used, applied, or integrated into a routine. The scene communicates "follow along with me" energy';
+            sceneDescription = 'a bright, clean, beautifully organized tutorial-style composition that feels like a premium beauty creator's content. The product is shown in a real-life application context — being used, applied, or integrated into a routine. The scene communicates "follow along with me" energy';
             sceneProps = 'routine-related items arranged sequentially: numbered visual cues, clean cotton pads, a small mirror, the product positioned among complementary skincare items on a clean vanity or marble surface. Include hands-friendly elements: jade roller, gua sha stone, clean towel. Everything feels organized, intentional, and aspirational';
             sceneLighting = 'bright, cheerful, and clean — large window natural light creating even illumination with minimal shadows. The scene is well-lit and optimistic. Colors pop. Shot on iPhone 15 Pro Max aesthetic quality (relatable influencer content) combined with Canon R5 sharpness';
-            sceneColor = 'fresh, bright, organized palette — clean white, soft pink, light wood, sage green accents, and pops of color from the product. Color grading: bright, slightly lifted shadows, clean and fresh like a beauty influencer\'s feed';
-            sceneAngle = 'overhead flat-lay or slightly angled bird\'s-eye view showing the routine items in organized sequence. Clean negative space for step-number text overlays. The composition guides the eye through the routine';
+            sceneColor = 'fresh, bright, organized palette — clean white, soft pink, light wood, sage green accents, and pops of color from the product. Color grading: bright, slightly lifted shadows, clean and fresh like a beauty influencer's feed';
+            sceneAngle = 'overhead flat-lay or slightly angled bird's-eye view showing the routine items in organized sequence. Clean negative space for step-number text overlays. The composition guides the eye through the routine';
           } else if (topicSignals.hairCare) {
             autoStyleName = 'Hair Vitality';
             sceneDescription = 'a stunning beauty shot focused on hair health and vitality. The product is shown in a context that communicates hair transformation — perhaps held near flowing, glossy hair, or placed on a vanity next to hair care tools. The scene radiates hair health, shine, and confidence';
@@ -2898,7 +2929,9 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
             sceneLighting = 'beauty lighting that emphasizes shine and texture — soft, wrapping light that would make hair gleam. Warm undertone with beautiful specular highlights. Slight backlight creating a luminous halo effect. Shot on Sony A7RV with 70-200mm f/2.8 for beautiful compression and bokeh';
             sceneColor = 'rich, glossy palette — deep chocolate browns, honey gold, warm amber, healthy pink scalp tones, natural wood. Color grading: warm, rich, glossy — emphasizing shine and health';
             sceneAngle = 'close-up beauty angle with the product prominently featured. Shallow depth of field with gorgeous hair-like texture elements in the background';
-          } else {
+          } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
             // DEFAULT: Premium Lifestyle Editorial
             autoStyleName = 'Premium Lifestyle Editorial';
             sceneDescription = 'a world-class lifestyle product photograph that feels like it was shot by a top advertising agency for a major beauty brand. The product is placed in an aspirational, real-life setting that the target audience dreams about. The scene tells a story — not just showing a product, but showing a LIFE. This image must make a Myanmar woman aged 18-35 stop scrolling and immediately save it';
@@ -2914,7 +2947,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
 
           // Build the final content-aware section
           const contentDirective = activePostContent 
-            ? `\n=== ACTUAL POST CONTENT ANALYSIS ===\nThe image MUST visually represent THIS specific post content:\n"${activePostContent.substring(0, 600)}"\n\nAnalyze the above post and ensure the image DIRECTLY relates to what the post discusses. The viewer should look at the image and immediately understand what the post is about. The image and text must feel like they were created as a single unit.\n`
+            ? `n=== ACTUAL POST CONTENT ANALYSIS ===nThe image MUST visually represent THIS specific post content:n"${activePostContent.substring(0, 600)}"nnAnalyze the above post and ensure the image DIRECTLY relates to what the post discusses. The viewer should look at the image and immediately understand what the post is about. The image and text must feel like they were created as a single unit.n`
             : '';
 
           return `YOU ARE A WORLD-CLASS COMMERCIAL PHOTOGRAPHER AND VISUAL STRATEGIST. You shoot for Vogue, Elle, Harper's Bazaar, and $500,000 beauty campaigns. Your images are INDISTINGUISHABLE from real photographs taken with a $10,000 camera setup.
@@ -3035,7 +3068,7 @@ Text Overlay Style: "${textOverlayStyle}"
 
 ${modelPrompt}
 
-${productContext ? `CRITICAL PRODUCT RULES:\n${productContext}` : ''}
+${productContext ? `CRITICAL PRODUCT RULES:n${productContext}` : ''}
 
 === TYPOGRAPHY (CRITICAL) ===
 - Include beautiful, high-quality typography in perfectly accurate Myanmar (Burmese) language
@@ -3049,67 +3082,67 @@ ${productContext ? `CRITICAL PRODUCT RULES:\n${productContext}` : ''}
 
 CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'DGSA 1') {
-          return `A professional, 8K Quality high-resolution photo of (a breathtakingly beautiful, highly attractive young Korean or Chinese Female) talent, expertly posed and holding ${pName}. The talent MUST have very light, glowing skin color and 100% life-like realistic skin texture with visible pores. DO NOT make the skin look like plastic or CGI. ${pName} is prominently featured in the foreground, sharp and in focus, with the talent subtly positioned to draw attention to it. The talent's confident expression complements the product's presence. The image is captured in a modern studio, luxurious interior, urban setting with soft, natural light, with a color palette cohesive with ${pName}'s branding. The composition is dynamic and clean, with the primary focus clearly on the product, supported by the talent's pose and gaze. Please do not change product photo. Do not change product's image and not too big in hand of lady. The lady have beautiful smile and teeth showing.\n\n${productIdentity}\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A professional, 8K Quality high-resolution photo of (a breathtakingly beautiful, highly attractive young Korean or Chinese Female) talent, expertly posed and holding ${pName}. The talent MUST have very light, glowing skin color and 100% life-like realistic skin texture with visible pores. DO NOT make the skin look like plastic or CGI. ${pName} is prominently featured in the foreground, sharp and in focus, with the talent subtly positioned to draw attention to it. The talent's confident expression complements the product's presence. The image is captured in a modern studio, luxurious interior, urban setting with soft, natural light, with a color palette cohesive with ${pName}'s branding. The composition is dynamic and clean, with the primary focus clearly on the product, supported by the talent's pose and gaze. Please do not change product photo. Do not change product's image and not too big in hand of lady. The lady have beautiful smile and teeth showing.nn${productIdentity}nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'DGSA 2') {
-          return `A professional, 8K Quality high-resolution photo of (a breathtakingly handsome, highly attractive young Korean or Chinese Male) talent, expertly posed and holding ${pName}. The talent MUST have very light, glowing skin color and 100% life-like realistic skin texture with visible pores. DO NOT make the skin look like plastic or CGI. ${pName} is prominently featured in the foreground, sharp and in focus, with the talent subtly positioned to draw attention to it. The talent's confident expression complements the product's presence. The image is captured in a modern studio, luxurious interior, urban setting with soft, natural light, with a color palette cohesive with ${pName}'s branding. The composition is dynamic and clean, with the primary focus clearly on the product, supported by the talent's pose and gaze. Please do not change product photo. Do not change product's image and not too big in hand of man. The man have beautiful smile and teeth showing.\n\n${productIdentity}\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A professional, 8K Quality high-resolution photo of (a breathtakingly handsome, highly attractive young Korean or Chinese Male) talent, expertly posed and holding ${pName}. The talent MUST have very light, glowing skin color and 100% life-like realistic skin texture with visible pores. DO NOT make the skin look like plastic or CGI. ${pName} is prominently featured in the foreground, sharp and in focus, with the talent subtly positioned to draw attention to it. The talent's confident expression complements the product's presence. The image is captured in a modern studio, luxurious interior, urban setting with soft, natural light, with a color palette cohesive with ${pName}'s branding. The composition is dynamic and clean, with the primary focus clearly on the product, supported by the talent's pose and gaze. Please do not change product photo. Do not change product's image and not too big in hand of man. The man have beautiful smile and teeth showing.nn${productIdentity}nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'DGSA 3') {
-          return `A professional, 8K Quality high-resolution photo of (a breathtakingly beautiful, highly attractive young Korean or Chinese Female) talent, expertly posed and holding ${pName}. The talent MUST have very light, glowing skin color and 100% life-like realistic skin texture with visible pores. DO NOT make the skin look like plastic or CGI. ${pName} is prominently featured in the foreground, sharp and in focus, with the talent subtly positioned to draw attention to it. The talent's confident expression complements the product's presence. The image is captured in a modern studio, luxurious interior, urban setting with soft, natural light, with a color palette cohesive with ${pName}'s branding. The composition is dynamic and clean, with the primary focus clearly on the product, supported by the talent's pose and gaze. Please do not change product photo. Do not change product's image and not too big in hand of lady. Size 1:1.\n\n${productIdentity}\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A professional, 8K Quality high-resolution photo of (a breathtakingly beautiful, highly attractive young Korean or Chinese Female) talent, expertly posed and holding ${pName}. The talent MUST have very light, glowing skin color and 100% life-like realistic skin texture with visible pores. DO NOT make the skin look like plastic or CGI. ${pName} is prominently featured in the foreground, sharp and in focus, with the talent subtly positioned to draw attention to it. The talent's confident expression complements the product's presence. The image is captured in a modern studio, luxurious interior, urban setting with soft, natural light, with a color palette cohesive with ${pName}'s branding. The composition is dynamic and clean, with the primary focus clearly on the product, supported by the talent's pose and gaze. Please do not change product photo. Do not change product's image and not too big in hand of lady. Size 1:1.nn${productIdentity}nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'DGSA 4') {
-          return `A professional, 8K Quality high-resolution photo of (a breathtakingly handsome, highly attractive young Korean or Chinese Male) talent, expertly posed and holding ${pName}. The talent MUST have very light, glowing skin color and 100% life-like realistic skin texture with visible pores. DO NOT make the skin look like plastic or CGI. ${pName} is prominently featured in the foreground, sharp and in focus, with the talent subtly positioned to draw attention to it. The talent's confident expression complements the product's presence. The image is captured in a modern studio, luxurious interior, urban setting with soft, natural light, with a color palette cohesive with ${pName}'s branding. The composition is dynamic and clean, with the primary focus clearly on the product, supported by the talent's pose and gaze. Please do not change product photo. Do not change product's image and not too big in hand of man. Size 1:1.\n\n${productIdentity}\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A professional, 8K Quality high-resolution photo of (a breathtakingly handsome, highly attractive young Korean or Chinese Male) talent, expertly posed and holding ${pName}. The talent MUST have very light, glowing skin color and 100% life-like realistic skin texture with visible pores. DO NOT make the skin look like plastic or CGI. ${pName} is prominently featured in the foreground, sharp and in focus, with the talent subtly positioned to draw attention to it. The talent's confident expression complements the product's presence. The image is captured in a modern studio, luxurious interior, urban setting with soft, natural light, with a color palette cohesive with ${pName}'s branding. The composition is dynamic and clean, with the primary focus clearly on the product, supported by the talent's pose and gaze. Please do not change product photo. Do not change product's image and not too big in hand of man. Size 1:1.nn${productIdentity}nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'DGSA 5') {
-          return `A professional, 8K Quality high-resolution photo of (a breathtakingly beautiful young Korean or Chinese Female and a highly attractive young Korean or Chinese Male) talent, expertly posed and holding ${pName}. The talent MUST have very light, glowing skin color and 100% life-like realistic skin texture with visible pores. DO NOT make the skin look like plastic or CGI. ${pName} is prominently featured in the foreground, sharp and in focus, with the talent subtly positioned to draw attention to it. The talent's confident expression complements the product's presence. The image is captured in a modern studio, luxurious interior, urban setting with soft, natural light, with a color palette cohesive with ${pName}'s branding. The composition is dynamic and clean, with the primary focus clearly on the product, supported by the talent's pose and gaze. Please do not change product photo. Do not change product's image and not too big in hand of talent. The talent have beautiful smile and teeth showing.\n\n${productIdentity}\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A professional, 8K Quality high-resolution photo of (a breathtakingly beautiful young Korean or Chinese Female and a highly attractive young Korean or Chinese Male) talent, expertly posed and holding ${pName}. The talent MUST have very light, glowing skin color and 100% life-like realistic skin texture with visible pores. DO NOT make the skin look like plastic or CGI. ${pName} is prominently featured in the foreground, sharp and in focus, with the talent subtly positioned to draw attention to it. The talent's confident expression complements the product's presence. The image is captured in a modern studio, luxurious interior, urban setting with soft, natural light, with a color palette cohesive with ${pName}'s branding. The composition is dynamic and clean, with the primary focus clearly on the product, supported by the talent's pose and gaze. Please do not change product photo. Do not change product's image and not too big in hand of talent. The talent have beautiful smile and teeth showing.nn${productIdentity}nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'DGSA 6') {
-          return `A professional, 8K Quality high-resolution photo of (a breathtakingly beautiful young Korean or Chinese Female and a highly attractive young Korean or Chinese Male) talent, expertly posed and holding ${pName}. The talent MUST have very light, glowing skin color and 100% life-like realistic skin texture with visible pores. DO NOT make the skin look like plastic or CGI. ${pName} is prominently featured in the foreground, sharp and in focus, with the talent subtly positioned to draw attention to it. The talent's confident expression complements the product's presence. The image is captured in a modern studio, luxurious interior, urban setting with soft, natural light, with a color palette cohesive with ${pName}'s branding. The composition is dynamic and clean, with the primary focus clearly on the product, supported by the talent's pose and gaze. Please do not change product photo. Do not change product's image and not too big in hand of talent. Size 1:1.\n\n${productIdentity}\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A professional, 8K Quality high-resolution photo of (a breathtakingly beautiful young Korean or Chinese Female and a highly attractive young Korean or Chinese Male) talent, expertly posed and holding ${pName}. The talent MUST have very light, glowing skin color and 100% life-like realistic skin texture with visible pores. DO NOT make the skin look like plastic or CGI. ${pName} is prominently featured in the foreground, sharp and in focus, with the talent subtly positioned to draw attention to it. The talent's confident expression complements the product's presence. The image is captured in a modern studio, luxurious interior, urban setting with soft, natural light, with a color palette cohesive with ${pName}'s branding. The composition is dynamic and clean, with the primary focus clearly on the product, supported by the talent's pose and gaze. Please do not change product photo. Do not change product's image and not too big in hand of talent. Size 1:1.nn${productIdentity}nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Flat Lay Product Arrangement') {
-          return `A stunning 8K overhead flat lay product photography shot. Top-down bird's-eye view composition on a premium marble, linen, or textured surface. ${pName} is the hero product placed perfectly center. Surround it with carefully curated lifestyle props: fresh flowers, gold accessories, silk fabric swatches, botanical elements, water droplets, and complementary beauty items arranged with intentional negative space. Soft, diffused natural window light creating gentle shadows. Color palette: muted pastels, cream, blush pink, sage green, and gold accents. The arrangement should feel like a luxury Instagram flat lay by a professional content creator. Ultra-sharp focus on every detail. Clean, aspirational, and highly shareable aesthetic.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Luxurious feel, suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A stunning 8K overhead flat lay product photography shot. Top-down bird's-eye view composition on a premium marble, linen, or textured surface. ${pName} is the hero product placed perfectly center. Surround it with carefully curated lifestyle props: fresh flowers, gold accessories, silk fabric swatches, botanical elements, water droplets, and complementary beauty items arranged with intentional negative space. Soft, diffused natural window light creating gentle shadows. Color palette: muted pastels, cream, blush pink, sage green, and gold accents. The arrangement should feel like a luxury Instagram flat lay by a professional content creator. Ultra-sharp focus on every detail. Clean, aspirational, and highly shareable aesthetic.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Luxurious feel, suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Neon Cyberpunk') {
-          return `A jaw-dropping 8K cyberpunk-inspired product shot. ${pName} is showcased in a futuristic, neon-drenched environment. Vivid electric blue, hot pink, and purple neon light strips reflect off glossy surfaces and wet, rain-slicked textures. Holographic elements and subtle digital glitch effects frame the product. The product itself is lit with dramatic rim lighting and neon color spill, making it glow like a technological artifact. Dark background with deep blacks contrasted by intense, saturated neon highlights. Volumetric fog and light rays add cinematic depth. Futuristic UI elements, floating particles, and glass/chrome materials surround the product. The overall mood is edgy, high-tech, and ultra-modern — like a sci-fi movie poster meets luxury advertising.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. The text should have a glowing neon effect that matches the scene. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A jaw-dropping 8K cyberpunk-inspired product shot. ${pName} is showcased in a futuristic, neon-drenched environment. Vivid electric blue, hot pink, and purple neon light strips reflect off glossy surfaces and wet, rain-slicked textures. Holographic elements and subtle digital glitch effects frame the product. The product itself is lit with dramatic rim lighting and neon color spill, making it glow like a technological artifact. Dark background with deep blacks contrasted by intense, saturated neon highlights. Volumetric fog and light rays add cinematic depth. Futuristic UI elements, floating particles, and glass/chrome materials surround the product. The overall mood is edgy, high-tech, and ultra-modern — like a sci-fi movie poster meets luxury advertising.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. The text should have a glowing neon effect that matches the scene. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Luxury Magazine Editorial') {
-          return `A breathtaking 8K luxury editorial product photograph worthy of Vogue, Harper's Bazaar, or Elle magazine. ${pName} is presented with the sophistication of a high-fashion editorial spread. The product sits on or near elegant surfaces — black velvet, white sculptural pedestals, or polished Italian marble. Dramatic, high-contrast studio lighting with sharp highlights and deep, rich shadows. The composition follows the rule of thirds with intentional asymmetry for visual tension. Background features muted neutral tones (charcoal, ivory, champagne gold) with subtle textural elements — draped silk, architectural elements, or abstract art. The lighting is reminiscent of Irving Penn or Mario Testino — sculpted, refined, and emotionally evocative. Every surface has realistic texture: fabric weave, stone grain, product material finish. This image must evoke exclusivity, wealth, and timeless elegance.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Typography should feel editorial and refined. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A breathtaking 8K luxury editorial product photograph worthy of Vogue, Harper's Bazaar, or Elle magazine. ${pName} is presented with the sophistication of a high-fashion editorial spread. The product sits on or near elegant surfaces — black velvet, white sculptural pedestals, or polished Italian marble. Dramatic, high-contrast studio lighting with sharp highlights and deep, rich shadows. The composition follows the rule of thirds with intentional asymmetry for visual tension. Background features muted neutral tones (charcoal, ivory, champagne gold) with subtle textural elements — draped silk, architectural elements, or abstract art. The lighting is reminiscent of Irving Penn or Mario Testino — sculpted, refined, and emotionally evocative. Every surface has realistic texture: fabric weave, stone grain, product material finish. This image must evoke exclusivity, wealth, and timeless elegance.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Typography should feel editorial and refined. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Natural Lifestyle') {
-          return `A warm, authentic 8K lifestyle product photograph in a natural setting. ${pName} is captured in a real-life moment — placed on a rustic wooden table by a sunlit window, held casually in soft hands, or nestled among organic elements like fresh eucalyptus, raw cotton, dried lavender, or morning coffee. Golden hour sunlight streams through sheer curtains, creating beautiful warm tones and soft lens flare. The scene feels lived-in, cozy, and aspirational — like a beautiful morning routine captured candidly. Color palette: warm honey, soft whites, natural wood tones, sage green, and subtle cream. Shallow depth of field with creamy bokeh in the background. The environment includes elements like linen bedsheets, ceramic mugs, indoor plants, or a peaceful bathroom vanity. The mood is calm, wholesome, and deeply relatable — making the viewer desire this lifestyle. 100% realistic with natural textures and imperfections.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.\nDesired Emotional Response: ${emotionalResponse || 'Calm, authentic, and self-care'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A warm, authentic 8K lifestyle product photograph in a natural setting. ${pName} is captured in a real-life moment — placed on a rustic wooden table by a sunlit window, held casually in soft hands, or nestled among organic elements like fresh eucalyptus, raw cotton, dried lavender, or morning coffee. Golden hour sunlight streams through sheer curtains, creating beautiful warm tones and soft lens flare. The scene feels lived-in, cozy, and aspirational — like a beautiful morning routine captured candidly. Color palette: warm honey, soft whites, natural wood tones, sage green, and subtle cream. Shallow depth of field with creamy bokeh in the background. The environment includes elements like linen bedsheets, ceramic mugs, indoor plants, or a peaceful bathroom vanity. The mood is calm, wholesome, and deeply relatable — making the viewer desire this lifestyle. 100% realistic with natural textures and imperfections.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.nDesired Emotional Response: ${emotionalResponse || 'Calm, authentic, and self-care'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Dreamy Bokeh & Glow') {
-          return `A mesmerizing 8K product shot with a magical, dreamy atmosphere. ${pName} is the sharp focal point surrounded by a sea of gorgeous, colorful bokeh light orbs (circular, hexagonal, and diamond-shaped) in soft pink, gold, lavender, and warm amber tones. The product appears to float or rest on a reflective, glass-like surface that mirrors the bokeh lights below. Subtle sparkle particles and soft light streaks surround the product like fairy dust. The background is a beautiful gradient blur transitioning from deep violet to warm rose gold. Soft front lighting illuminates the product with a gentle, flattering glow while rim lighting creates a luminous halo effect around its edges. The mood is romantic, magical, and premium — like a luxury perfume advertisement combined with a fairy tale aesthetic. Water droplets or dew on the product surface add extra realism and texture.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Text should have a soft glow effect matching the dreamy scene. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A mesmerizing 8K product shot with a magical, dreamy atmosphere. ${pName} is the sharp focal point surrounded by a sea of gorgeous, colorful bokeh light orbs (circular, hexagonal, and diamond-shaped) in soft pink, gold, lavender, and warm amber tones. The product appears to float or rest on a reflective, glass-like surface that mirrors the bokeh lights below. Subtle sparkle particles and soft light streaks surround the product like fairy dust. The background is a beautiful gradient blur transitioning from deep violet to warm rose gold. Soft front lighting illuminates the product with a gentle, flattering glow while rim lighting creates a luminous halo effect around its edges. The mood is romantic, magical, and premium — like a luxury perfume advertisement combined with a fairy tale aesthetic. Water droplets or dew on the product surface add extra realism and texture.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Text should have a soft glow effect matching the dreamy scene. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Morning Routine ☕') {
-          return `A warm, authentic 8K lifestyle product photograph of a morning routine. ${pName} is placed organically on a clean, bright bathroom vanity or minimalist bedroom nightstand. Soft morning sunlight streams through a window, creating a fresh, energizing atmosphere. Nearby items include a steaming cup of coffee, a fluffy white towel, or a gentle mirror reflection. The mood is aspirational, peaceful, and ready to start the day. Ultra-realistic, relatable, but shot with high-end equipment.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A warm, authentic 8K lifestyle product photograph of a morning routine. ${pName} is placed organically on a clean, bright bathroom vanity or minimalist bedroom nightstand. Soft morning sunlight streams through a window, creating a fresh, energizing atmosphere. Nearby items include a steaming cup of coffee, a fluffy white towel, or a gentle mirror reflection. The mood is aspirational, peaceful, and ready to start the day. Ultra-realistic, relatable, but shot with high-end equipment.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Cozy Coffee Shop 🥐') {
-          return `A chic aesthetic 8K lifestyle photography shot of ${pName} sitting on a wooden table in a high-end designer coffee shop. Natural soft window light filtering in. Surrounded by an artisanal latte with latte art, a buttery croissant on a ceramic plate, a stylish magazine or a sleek notebook. The environment is warm, trendy, and sophisticated. Selective focus with buttery depth of field. Makes the viewer feel like they are having an elegant afternoon coffee break.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A chic aesthetic 8K lifestyle photography shot of ${pName} sitting on a wooden table in a high-end designer coffee shop. Natural soft window light filtering in. Surrounded by an artisanal latte with latte art, a buttery croissant on a ceramic plate, a stylish magazine or a sleek notebook. The environment is warm, trendy, and sophisticated. Selective focus with buttery depth of field. Makes the viewer feel like they are having an elegant afternoon coffee break.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Outdoor Active 🏃‍♀️') {
-          return `A bright, dynamic 8K lifestyle photograph capturing health and vitality outdoors. ${pName} is held playfully or placed in focus with a beautifully lit, sunny park, hiking trail, or modern tennis court out of focus in the background. Elements of an active lifestyle like a sleek reusable water bottle, a rolled-up yoga mat, or fresh green leaves frame the shot. Energizing, vibrant, and incredibly crisp. Perfect for representing wellness and active living.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A bright, dynamic 8K lifestyle photograph capturing health and vitality outdoors. ${pName} is held playfully or placed in focus with a beautifully lit, sunny park, hiking trail, or modern tennis court out of focus in the background. Elements of an active lifestyle like a sleek reusable water bottle, a rolled-up yoga mat, or fresh green leaves frame the shot. Energizing, vibrant, and incredibly crisp. Perfect for representing wellness and active living.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Luxury Spa Day 🛁') {
-          return `An indulgent, highly relaxing 8K lifestyle shot of ${pName} set inside a world-class luxury spa. The product is next to a marble bathtub filled with warm soapy bubbles and rose petals. Fluffy robes, glowing candles, and bamboo tray accents complete the frame. Ambient, incredibly soft, and flattering mood lighting with subtle steam rising in the background. Evokes pure relaxation, self-care Sunday vibes, and absolute tranquility.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `An indulgent, highly relaxing 8K lifestyle shot of ${pName} set inside a world-class luxury spa. The product is next to a marble bathtub filled with warm soapy bubbles and rose petals. Fluffy robes, glowing candles, and bamboo tray accents complete the frame. Ambient, incredibly soft, and flattering mood lighting with subtle steam rising in the background. Evokes pure relaxation, self-care Sunday vibes, and absolute tranquility.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Aesthetic Shelfie ✨') {
-          return `A gorgeous 8K 'shelfie' lifestyle photography shot. ${pName} is beautifully organized on a chic, minimalist floating shelf, flanked by other premium but unbranded aesthetic skincare bottles, small potted succulents, and delicate gold jewelry. The backdrop is a soft muted pastel or cream wall. Symmetrical, organized, deeply satisfying, and highly aspirational. Soft, diffused lighting highlights the product's premium packaging.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A gorgeous 8K 'shelfie' lifestyle photography shot. ${pName} is beautifully organized on a chic, minimalist floating shelf, flanked by other premium but unbranded aesthetic skincare bottles, small potted succulents, and delicate gold jewelry. The backdrop is a soft muted pastel or cream wall. Symmetrical, organized, deeply satisfying, and highly aspirational. Soft, diffused lighting highlights the product's premium packaging.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'On-the-go City Life 🏙️') {
-          return `An ultra-stylish, fast-paced 8K lifestyle shot of ${pName} held casually against a softly blurred, bustling cosmopolitan city street or modern cafe exterior. Shot over-the-shoulder or from a personal POV perspective. Elements of a busy but glamorous modern lifestyle: a designer handbag strap, sunglasses, or a sleek smartwatch barely visible. The lighting is golden-hour sunlight bouncing off glass skyscrapers. Chic, urban, trendy, and highly relatable to modern professionals.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `An ultra-stylish, fast-paced 8K lifestyle shot of ${pName} held casually against a softly blurred, bustling cosmopolitan city street or modern cafe exterior. Shot over-the-shoulder or from a personal POV perspective. Elements of a busy but glamorous modern lifestyle: a designer handbag strap, sunglasses, or a sleek smartwatch barely visible. The lighting is golden-hour sunlight bouncing off glass skyscrapers. Chic, urban, trendy, and highly relatable to modern professionals.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Night Time Unwinding 🌙') {
-          return `A serene, quiet 8K lifestyle portrait of a night-time unwinding routine. ${pName} is the star of a moody, low-lit environment illuminated by warm ambient string lights or a beautiful bedside lamp. The product rests on silk bedsheets, next to an open book and a calming cup of chamomile tea. The vibe is slow, restorative, deep relaxation, and luxurious evening skincare rituals. High contrast but extremely soft shadows.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A serene, quiet 8K lifestyle portrait of a night-time unwinding routine. ${pName} is the star of a moody, low-lit environment illuminated by warm ambient string lights or a beautiful bedside lamp. The product rests on silk bedsheets, next to an open book and a calming cup of chamomile tea. The vibe is slow, restorative, deep relaxation, and luxurious evening skincare rituals. High contrast but extremely soft shadows.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Workspace Desk 💻') {
-          return `A sharp, modern, highly productive 8K lifestyle shot of ${pName} seamlessly integrated into a chic, minimalist home office desk setup. Surrounded by an aluminum laptop (screen out of focus), a pair of designer blue-light glasses, a stylish planner, and a small potted plant. Clean lines, bright, airy lighting. Conveys a sense of boss-girl/boy energy, productivity, and success without compromising on wellness.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A sharp, modern, highly productive 8K lifestyle shot of ${pName} seamlessly integrated into a chic, minimalist home office desk setup. Surrounded by an aluminum laptop (screen out of focus), a pair of designer blue-light glasses, a stylish planner, and a small potted plant. Clean lines, bright, airy lighting. Conveys a sense of boss-girl/boy energy, productivity, and success without compromising on wellness.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Weekend Picnic 🧺') {
-          return `A delightful, sunny 8K lifestyle photograph of an aesthetic weekend picnic in a lush, green grassy park. ${pName} is beautifully placed on a classic gingham or linen picnic blanket alongside fresh strawberries, sliced sourdough bread, a sun hat, and wildflowers. Bright, cheerful natural sunlight, high saturation but soft pastel tones. Evokes freedom, joy, natural beauty, and carefree weekends.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A delightful, sunny 8K lifestyle photograph of an aesthetic weekend picnic in a lush, green grassy park. ${pName} is beautifully placed on a classic gingham or linen picnic blanket alongside fresh strawberries, sliced sourdough bread, a sun hat, and wildflowers. Bright, cheerful natural sunlight, high saturation but soft pastel tones. Evokes freedom, joy, natural beauty, and carefree weekends.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Minimalist Bedroom 🛏️') {
-          return `A flawlessly clean, calming 8K lifestyle shot set in an ultra-minimalist, wabi-sabi style bedroom. ${pName} is placed gracefully on unmade but perfectly styled luxury linen bedsheets or a raw wooden side table. Lots of negative space, neutral earthy tones (beige, taupe, off-white), and soft textural shadows playing across the walls. A masterpiece of 'less is more' lifestyle aesthetics.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A flawlessly clean, calming 8K lifestyle shot set in an ultra-minimalist, wabi-sabi style bedroom. ${pName} is placed gracefully on unmade but perfectly styled luxury linen bedsheets or a raw wooden side table. Lots of negative space, neutral earthy tones (beige, taupe, off-white), and soft textural shadows playing across the walls. A masterpiece of 'less is more' lifestyle aesthetics.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Enhances natural beauty'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Dior Haute Couture') {
-          return `A breathtaking 8K luxury cosmetic product photograph inspired by the visual identity of Dior Beauty and haute couture advertising. ${pName} is presented as a sculptural art object, placed on a pristine white or soft blush-pink pedestal with architectural, geometric shapes — clean arches, fluted columns, or curved abstract forms in matte white plaster. The lighting is ultra-refined: soft, diffused key light from above with delicate shadow play that sculpts the product's form. A single fresh peony, rose, or lily blossom (Dior's signature flower) rests elegantly nearby. The entire scene is drenched in a monochromatic palette of ivory, pale rose, champagne, and whisper-soft grey. The textures are hyper-realistic: you can see the fine grain of plaster, the dewy petals, the glossy finish on the product. The composition is breathtakingly minimal yet profoundly luxurious — every element is intentional. The overall mood radiates French haute couture elegance, timeless femininity, and couture-level artistry. This is a Dior campaign visual.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Timeless beauty and radiance'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography must be thin, elegant serif — Didot or Bodoni style. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A breathtaking 8K luxury cosmetic product photograph inspired by the visual identity of Dior Beauty and haute couture advertising. ${pName} is presented as a sculptural art object, placed on a pristine white or soft blush-pink pedestal with architectural, geometric shapes — clean arches, fluted columns, or curved abstract forms in matte white plaster. The lighting is ultra-refined: soft, diffused key light from above with delicate shadow play that sculpts the product's form. A single fresh peony, rose, or lily blossom (Dior's signature flower) rests elegantly nearby. The entire scene is drenched in a monochromatic palette of ivory, pale rose, champagne, and whisper-soft grey. The textures are hyper-realistic: you can see the fine grain of plaster, the dewy petals, the glossy finish on the product. The composition is breathtakingly minimal yet profoundly luxurious — every element is intentional. The overall mood radiates French haute couture elegance, timeless femininity, and couture-level artistry. This is a Dior campaign visual.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Timeless beauty and radiance'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography must be thin, elegant serif — Didot or Bodoni style. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Chanel Noir & Gold') {
-          return `An iconic 8K luxury cosmetic product photograph channeling the signature Chanel Beauty aesthetic — the legendary contrast of noir black and opulent gold. ${pName} is the centerpiece, resting on a mirror-black lacquered surface that creates a perfect, sharply defined reflection beneath it. The background is deep, rich, velvety black — absolute darkness that makes the product seem to glow from within. Gold elements frame the scene: fine gold leaf scattered like confetti, a thin gold chain draped artfully nearby, or subtle gold dust particles floating in the air catching the light. The lighting is dramatic and precise — a single focused spotlight creates a brilliant highlight on the product while the rest falls into luxurious shadow. The contrast ratio is extreme: deep blacks meet brilliant golds and crisp product details. Subtle smoke or mist curls at the base, adding mystery. Every surface texture is hyper-detailed: the mirror's flawless reflection, the matte-vs-glossy product finish, the metallic shimmer of gold. The mood is unapologetically powerful, bold, and timeless — pure Chanel DNA.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Iconic luxury and confidence'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography should be bold, uppercase, high-contrast — white or gold on black. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `An iconic 8K luxury cosmetic product photograph channeling the signature Chanel Beauty aesthetic — the legendary contrast of noir black and opulent gold. ${pName} is the centerpiece, resting on a mirror-black lacquered surface that creates a perfect, sharply defined reflection beneath it. The background is deep, rich, velvety black — absolute darkness that makes the product seem to glow from within. Gold elements frame the scene: fine gold leaf scattered like confetti, a thin gold chain draped artfully nearby, or subtle gold dust particles floating in the air catching the light. The lighting is dramatic and precise — a single focused spotlight creates a brilliant highlight on the product while the rest falls into luxurious shadow. The contrast ratio is extreme: deep blacks meet brilliant golds and crisp product details. Subtle smoke or mist curls at the base, adding mystery. Every surface texture is hyper-detailed: the mirror's flawless reflection, the matte-vs-glossy product finish, the metallic shimmer of gold. The mood is unapologetically powerful, bold, and timeless — pure Chanel DNA.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Iconic luxury and confidence'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography should be bold, uppercase, high-contrast — white or gold on black. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'SK-II Crystal Clear') {
-          return `A luminous 8K luxury cosmetic product photograph inspired by SK-II's signature crystal-clear, radiant skin aesthetic. ${pName} is showcased on a transparent crystal or glass pedestal that refracts light into beautiful rainbow prisms. The entire scene is built around the concept of pure transparency and clarity: crystal-clear water droplets, glass spheres, and prismatic light refractions surround the product. The background is a soft, luminous gradient from pure white to the palest translucent blue, evoking the purity of Pitera essence. Delicate water streams or a thin sheet of crystal-clear liquid flows around the product's base, frozen in motion. The product is lit with bright, clean, even lighting that emphasizes flawless surfaces — no harsh shadows, only soft, radiant illumination that makes everything glow with inner light. A subtle Asian luxury sensibility: clean, serene, scientific precision meets ethereal beauty. The mood is pure, scientific, and luminous — like liquid crystal transformed into luxury. This is SK-II campaign-level imagery.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Crystal clear, radiant skin'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography should be clean, modern sans-serif with a crystalline quality. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A luminous 8K luxury cosmetic product photograph inspired by SK-II's signature crystal-clear, radiant skin aesthetic. ${pName} is showcased on a transparent crystal or glass pedestal that refracts light into beautiful rainbow prisms. The entire scene is built around the concept of pure transparency and clarity: crystal-clear water droplets, glass spheres, and prismatic light refractions surround the product. The background is a soft, luminous gradient from pure white to the palest translucent blue, evoking the purity of Pitera essence. Delicate water streams or a thin sheet of crystal-clear liquid flows around the product's base, frozen in motion. The product is lit with bright, clean, even lighting that emphasizes flawless surfaces — no harsh shadows, only soft, radiant illumination that makes everything glow with inner light. A subtle Asian luxury sensibility: clean, serene, scientific precision meets ethereal beauty. The mood is pure, scientific, and luminous — like liquid crystal transformed into luxury. This is SK-II campaign-level imagery.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Crystal clear, radiant skin'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography should be clean, modern sans-serif with a crystalline quality. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'La Mer Ocean Luxe') {
-          return `An exquisite 8K luxury cosmetic product photograph inspired by La Mer's iconic oceanic luxury aesthetic. ${pName} emerges majestically from an environment of deep ocean blues, luminous aquamarine, and sea-foam white. The product sits on a surface of smooth, wet sea stones or a sculptural wave-shaped pedestal in deep teal or navy. Surrounding elements include: glistening sea pearls, polished abalone shells with iridescent mother-of-pearl surfaces, delicate coral branches, and frozen splashes of crystal-clear seawater caught mid-motion. The lighting is cool and ethereal — soft blue-toned key light with warmer accents that highlight the product's premium finish. Tiny bubbles and water beads cling to the product surface, adding tactile realism. The background transitions from deep midnight blue at the edges to a luminous aqua glow behind the product, as if light is filtering through deep ocean water. Bioluminescent sparkle particles float gently, creating a magical underwater atmosphere. The mood is serene, deeply luxurious, and healing — evoking La Mer's promise of miraculous ocean-born beauty.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Deep ocean-powered renewal'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography should be elegant and fluid, evoking oceanic movement. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `An exquisite 8K luxury cosmetic product photograph inspired by La Mer's iconic oceanic luxury aesthetic. ${pName} emerges majestically from an environment of deep ocean blues, luminous aquamarine, and sea-foam white. The product sits on a surface of smooth, wet sea stones or a sculptural wave-shaped pedestal in deep teal or navy. Surrounding elements include: glistening sea pearls, polished abalone shells with iridescent mother-of-pearl surfaces, delicate coral branches, and frozen splashes of crystal-clear seawater caught mid-motion. The lighting is cool and ethereal — soft blue-toned key light with warmer accents that highlight the product's premium finish. Tiny bubbles and water beads cling to the product surface, adding tactile realism. The background transitions from deep midnight blue at the edges to a luminous aqua glow behind the product, as if light is filtering through deep ocean water. Bioluminescent sparkle particles float gently, creating a magical underwater atmosphere. The mood is serene, deeply luxurious, and healing — evoking La Mer's promise of miraculous ocean-born beauty.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Deep ocean-powered renewal'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography should be elegant and fluid, evoking oceanic movement. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Estée Lauder Golden Hour') {
-          return `A sumptuous 8K luxury cosmetic product photograph channeling the warm, radiant sophistication of Estée Lauder's signature golden-hour advertising aesthetic. ${pName} is bathed in rich, warm golden light as if photographed during the most beautiful sunset. The product sits on a brushed gold or warm bronze metallic surface with soft reflections. The background features an elegant out-of-focus gradient of warm amber, honey gold, and deep burgundy-brown tones — reminiscent of a luxurious penthouse suite at golden hour. Surrounding accents include: warm-toned dried roses, amber-colored glass bottles, a hint of cashmere fabric in champagne or camel tones, and subtle gold sparkle particles catching the light. The lighting is gloriously warm and directional — streaming from the side like late afternoon sunlight through floor-to-ceiling windows, creating long, elegant shadows and a warm glow that wraps around the product. The product's surface shows beautiful warm reflections and highlights. Every texture is photorealistic: the metallic surface sheen, fabric softness, floral delicacy. The mood is empowered feminine luxury — confident, warm, established, and timelessly beautiful. This is Estée Lauder at its finest.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Radiant, youthful beauty'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography should be warm gold, sophisticated serif style. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A sumptuous 8K luxury cosmetic product photograph channeling the warm, radiant sophistication of Estée Lauder's signature golden-hour advertising aesthetic. ${pName} is bathed in rich, warm golden light as if photographed during the most beautiful sunset. The product sits on a brushed gold or warm bronze metallic surface with soft reflections. The background features an elegant out-of-focus gradient of warm amber, honey gold, and deep burgundy-brown tones — reminiscent of a luxurious penthouse suite at golden hour. Surrounding accents include: warm-toned dried roses, amber-colored glass bottles, a hint of cashmere fabric in champagne or camel tones, and subtle gold sparkle particles catching the light. The lighting is gloriously warm and directional — streaming from the side like late afternoon sunlight through floor-to-ceiling windows, creating long, elegant shadows and a warm glow that wraps around the product. The product's surface shows beautiful warm reflections and highlights. Every texture is photorealistic: the metallic surface sheen, fabric softness, floral delicacy. The mood is empowered feminine luxury — confident, warm, established, and timelessly beautiful. This is Estée Lauder at its finest.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Radiant, youthful beauty'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography should be warm gold, sophisticated serif style. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Hermès Terracotta Garden') {
-          return `An exquisite 8K luxury cosmetic product photograph inspired by Hermès' signature Mediterranean terracotta and botanical garden aesthetic. ${pName} is presented on a warm, sun-kissed terracotta clay surface with beautiful natural texture and subtle earth-tone variations. The scene evokes a private garden in the South of France: rustic terracotta pottery, fresh-cut stems of wild rosemary, lavender sprigs, dried citrus slices, and raw linen in natural ecru drape softly nearby. Warm Mediterranean sunlight streams through olive tree branches overhead, creating dappled shadow patterns across the surface. The color palette is rich and earthy: burnt sienna, terracotta orange, sage green, dried wheat gold, cream, and warm stone grey. A handcrafted ceramic plate with olive oil or honey adds organic luxury. The lighting is warm and golden with natural outdoor softness — shot on Hasselblad X2D, the image has extraordinary dynamic range showing every clay pore, every linen thread, every herb leaf vein. The mood is artisanal luxury, grounded sophistication, and effortless Mediterranean elegance — the kind of beauty that comes from nature itself.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Natural artisanal beauty'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography should be warm, earthy serif with natural elegance. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `An exquisite 8K luxury cosmetic product photograph inspired by Hermès' signature Mediterranean terracotta and botanical garden aesthetic. ${pName} is presented on a warm, sun-kissed terracotta clay surface with beautiful natural texture and subtle earth-tone variations. The scene evokes a private garden in the South of France: rustic terracotta pottery, fresh-cut stems of wild rosemary, lavender sprigs, dried citrus slices, and raw linen in natural ecru drape softly nearby. Warm Mediterranean sunlight streams through olive tree branches overhead, creating dappled shadow patterns across the surface. The color palette is rich and earthy: burnt sienna, terracotta orange, sage green, dried wheat gold, cream, and warm stone grey. A handcrafted ceramic plate with olive oil or honey adds organic luxury. The lighting is warm and golden with natural outdoor softness — shot on Hasselblad X2D, the image has extraordinary dynamic range showing every clay pore, every linen thread, every herb leaf vein. The mood is artisanal luxury, grounded sophistication, and effortless Mediterranean elegance — the kind of beauty that comes from nature itself.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Natural artisanal beauty'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography should be warm, earthy serif with natural elegance. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Tom Ford Velvet Noir') {
-          return `A dangerously seductive 8K luxury cosmetic product photograph channeling Tom Ford Beauty's iconic dark, sensual aesthetic. ${pName} commands attention on a surface of deep black velvet that absorbs light and creates an almost infinite darkness. The scene is pure midnight luxury: the product is dramatically side-lit with a single precise beam of warm amber light that sculpts its form against the darkness. Surrounding elements are minimal but impactful: a smoky quartz crystal, black orchid petals with a subtle wet sheen, a thin ribbon of liquid gold or dark honey flowing slowly across the velvet surface. The background is true black with occasional subtle smoke wisps catching the light. Every surface is hyper-textured: the velvet's pile visible at macro level, the product's finish rendered in exquisite detail — whether matte, glossy, or metallic. A faint warm highlight rim-lights the product from behind, separating it from the darkness. The mood is intoxicating, powerful, unapologetically sensual — evoking late-night luxury, black-tie events, and magnetic confidence. Shot on Phase One IQ4 with a 120mm f/2.8 for razor-sharp focus and buttery bokeh. This is Tom Ford's visual DNA at its purest.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Sensual, powerful allure'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography should be sleek, thin, uppercase sans-serif in warm gold or cool silver against the darkness. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A dangerously seductive 8K luxury cosmetic product photograph channeling Tom Ford Beauty's iconic dark, sensual aesthetic. ${pName} commands attention on a surface of deep black velvet that absorbs light and creates an almost infinite darkness. The scene is pure midnight luxury: the product is dramatically side-lit with a single precise beam of warm amber light that sculpts its form against the darkness. Surrounding elements are minimal but impactful: a smoky quartz crystal, black orchid petals with a subtle wet sheen, a thin ribbon of liquid gold or dark honey flowing slowly across the velvet surface. The background is true black with occasional subtle smoke wisps catching the light. Every surface is hyper-textured: the velvet's pile visible at macro level, the product's finish rendered in exquisite detail — whether matte, glossy, or metallic. A faint warm highlight rim-lights the product from behind, separating it from the darkness. The mood is intoxicating, powerful, unapologetically sensual — evoking late-night luxury, black-tie events, and magnetic confidence. Shot on Phase One IQ4 with a 120mm f/2.8 for razor-sharp focus and buttery bokeh. This is Tom Ford's visual DNA at its purest.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Sensual, powerful allure'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography should be sleek, thin, uppercase sans-serif in warm gold or cool silver against the darkness. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'YSL Rouge Rebel') {
-          return `A fearlessly bold 8K luxury cosmetic product photograph inspired by Yves Saint Laurent Beauty's rebellious, high-fashion rouge aesthetic. ${pName} is the hero on a glossy black lacquered surface with a dramatic splash of liquid red — rich, vivid YSL rouge — frozen mid-motion around the product like a couture paint explosion. The red is not blood-red but fashion-red: a perfect saturated crimson with depth and warmth. The background is clean high-contrast: stark white fading to charcoal black, creating a graphic, editorial tension. Gold accents punctuate the scene — a fine gold chain, gold leaf fragments, or liquid gold droplets catching the light amidst the red splash. The lighting is high-fashion editorial: strong directional key light creating defined shadows, with a beauty dish softbox creating clean highlights on the product surface. Every droplet of the red liquid is razor-sharp, showing realistic fluid dynamics, surface tension, and light refraction. The composition is dynamic, asymmetric, and confrontational — the product is positioned off-center with the red splash creating movement and energy across the frame. The mood is defiant, passionate, and impossibly chic — fashion-forward beauty that demands attention.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Bold, confident beauty'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography should be bold, uppercase, high-fashion — white or gold against the dramatic background. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A fearlessly bold 8K luxury cosmetic product photograph inspired by Yves Saint Laurent Beauty's rebellious, high-fashion rouge aesthetic. ${pName} is the hero on a glossy black lacquered surface with a dramatic splash of liquid red — rich, vivid YSL rouge — frozen mid-motion around the product like a couture paint explosion. The red is not blood-red but fashion-red: a perfect saturated crimson with depth and warmth. The background is clean high-contrast: stark white fading to charcoal black, creating a graphic, editorial tension. Gold accents punctuate the scene — a fine gold chain, gold leaf fragments, or liquid gold droplets catching the light amidst the red splash. The lighting is high-fashion editorial: strong directional key light creating defined shadows, with a beauty dish softbox creating clean highlights on the product surface. Every droplet of the red liquid is razor-sharp, showing realistic fluid dynamics, surface tension, and light refraction. The composition is dynamic, asymmetric, and confrontational — the product is positioned off-center with the red splash creating movement and energy across the frame. The mood is defiant, passionate, and impossibly chic — fashion-forward beauty that demands attention.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Bold, confident beauty'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography should be bold, uppercase, high-fashion — white or gold against the dramatic background. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Sulwhasoo Heritage Gold') {
-          return `A magnificently refined 8K luxury cosmetic product photograph inspired by Sulwhasoo's Korean heritage luxury aesthetic — where traditional apothecary artistry meets modern opulence. ${pName} is reverently presented on a traditional Korean mother-of-pearl inlaid lacquer tray (나전칠기) with its iridescent shell fragments catching the light. The scene is layered with Asian luxury elements: dried ginseng roots with their organic, twisted forms, a small celadon (청자) ceramic tea cup with warm golden-brown tea, dried jujube fruits, and fresh plum blossom branches with delicate pink-white flowers. The surface beneath is warm honeyed wood or dark walnut with visible aged grain. Subtle wisps of incense smoke or steam rise gracefully, catching soft warm light. The color palette is unmistakably heritage luxury: deep amber gold, warm mahogany brown, antique brass, jade green accents, and soft cherry blossom pink. The lighting combines warm tungsten tones with soft diffused natural light — creating a contemplative, almost ceremonial atmosphere. Every texture is rendered with museum-quality realism: the pearlescent shimmer on the lacquer, the roughness of dried ginseng, the translucency of celadon ceramic. The mood is timeless, wise, deeply rooted in centuries of beauty wisdom — Asian luxury at its most authentic and profound.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Heritage-powered radiance'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography should be refined, balanced serif with subtle gold accents — elegant Asian luxury feel. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A magnificently refined 8K luxury cosmetic product photograph inspired by Sulwhasoo's Korean heritage luxury aesthetic — where traditional apothecary artistry meets modern opulence. ${pName} is reverently presented on a traditional Korean mother-of-pearl inlaid lacquer tray (나전칠기) with its iridescent shell fragments catching the light. The scene is layered with Asian luxury elements: dried ginseng roots with their organic, twisted forms, a small celadon (청자) ceramic tea cup with warm golden-brown tea, dried jujube fruits, and fresh plum blossom branches with delicate pink-white flowers. The surface beneath is warm honeyed wood or dark walnut with visible aged grain. Subtle wisps of incense smoke or steam rise gracefully, catching soft warm light. The color palette is unmistakably heritage luxury: deep amber gold, warm mahogany brown, antique brass, jade green accents, and soft cherry blossom pink. The lighting combines warm tungsten tones with soft diffused natural light — creating a contemplative, almost ceremonial atmosphere. Every texture is rendered with museum-quality realism: the pearlescent shimmer on the lacquer, the roughness of dried ginseng, the translucency of celadon ceramic. The mood is timeless, wise, deeply rooted in centuries of beauty wisdom — Asian luxury at its most authentic and profound.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Heritage-powered radiance'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography should be refined, balanced serif with subtle gold accents — elegant Asian luxury feel. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         } else if (imageStyle === 'Charlotte Tilbury Pillow Talk') {
-          return `A dreamily romantic 8K luxury cosmetic product photograph channeling Charlotte Tilbury's iconic Pillow Talk universe — the world's most flattering nude-pink beauty aesthetic. ${pName} is the star on a surface of crushed blush-pink velvet that catches light beautifully, creating soft, sensual folds and shadows. The entire scene is bathed in the warmest, most flattering rose-gold light — as if the world itself has been filtered through a Pillow Talk lens. Surrounding the product: soft pink rose petals (just-bloomed, slightly dewy), a vintage rose-gold hand mirror reflecting warm light, a silk ribbon in dusty rose, and fine pearl strands. The background is a dreamy soft-focus gradient of warm nude pink, champagne, and the palest mauve — luminous and glowing. Subtle light particles and shimmer float in the air like golden dust. The product itself glows with warm highlights, its surface rendered with photorealistic detail. The lighting is ultra-flattering beauty lighting: soft, wrapping, warm, with minimal shadows — the kind that makes everything look beautiful. A subtle star-filter effect on the brightest highlights adds a touch of magic. The mood is universally flattering, intimately glamorous, and irresistibly romantic — making every viewer feel like the most beautiful version of themselves. This is Charlotte Tilbury's visual magic.\n\n${productIdentity}\nProduct Benefits: ${productBenefits || 'Universally flattering beauty'}.\nHeadline/Hook Text to Overlay: "${hookToUse}".\nText Overlay Style: "${textOverlayStyle}".\n${modelPrompt}\n${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}` : ''}\nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography should be soft, feminine script or thin serif in warm rose gold or champagne tones. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
+          return `A dreamily romantic 8K luxury cosmetic product photograph channeling Charlotte Tilbury's iconic Pillow Talk universe — the world's most flattering nude-pink beauty aesthetic. ${pName} is the star on a surface of crushed blush-pink velvet that catches light beautifully, creating soft, sensual folds and shadows. The entire scene is bathed in the warmest, most flattering rose-gold light — as if the world itself has been filtered through a Pillow Talk lens. Surrounding the product: soft pink rose petals (just-bloomed, slightly dewy), a vintage rose-gold hand mirror reflecting warm light, a silk ribbon in dusty rose, and fine pearl strands. The background is a dreamy soft-focus gradient of warm nude pink, champagne, and the palest mauve — luminous and glowing. Subtle light particles and shimmer float in the air like golden dust. The product itself glows with warm highlights, its surface rendered with photorealistic detail. The lighting is ultra-flattering beauty lighting: soft, wrapping, warm, with minimal shadows — the kind that makes everything look beautiful. A subtle star-filter effect on the brightest highlights adds a touch of magic. The mood is universally flattering, intimately glamorous, and irresistibly romantic — making every viewer feel like the most beautiful version of themselves. This is Charlotte Tilbury's visual magic.nn${productIdentity}nProduct Benefits: ${productBenefits || 'Universally flattering beauty'}.nHeadline/Hook Text to Overlay: "${hookToUse}".nText Overlay Style: "${textOverlayStyle}".n${modelPrompt}n${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}` : ''}nCRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language. Typography should be soft, feminine script or thin serif in warm rose gold or champagne tones. Suitable for ${platform} marketing. CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand logos, company names, or trademarks (such as "Nu Skin") on the image or product. You must generate the headline text, but ZERO logos.`;
         }
 
         return `A masterpiece commercial product photography shot. 8K resolution, hyper-realistic, life-like, ultra-detailed, high-end studio lighting.
@@ -3125,16 +3158,16 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
       Text Overlay Style: "${textOverlayStyle}".
       Style: ${imageStyle}.
       ${modelPrompt}
-      ${productContext ? `\nCRITICAL PRODUCT RULES:\n${productContext}\nIf the model is interacting with the product, they MUST apply it ONLY to the 'Target Area' specified above. DO NOT show body products being applied to the face.` : ''}
+      ${productContext ? `nCRITICAL PRODUCT RULES:n${productContext}nIf the model is interacting with the product, they MUST apply it ONLY to the 'Target Area' specified above. DO NOT show body products being applied to the face.` : ''}
       CRITICAL: Include high-quality typography and Text Overlay in perfectly accurate Myanmar (Burmese) language related to the concept. The typography MUST strictly follow the "${textOverlayStyle}" style. The Myanmar text MUST be spelled correctly and rendered flawlessly with high-fidelity text rendering. Ensure professional font integration and seamless blending of the text with the overall image design.
       Luxurious feel, suitable for ${platform} marketing.`;
       };
 
       let finalPromptText = getPrompt(productName);
       if (productImages.length > 0) {
-        finalPromptText = "CORE INSTRUCTION: Use the provided image as the ABSOLUTE visual reference for the product. Recreate the product's EXACT appearance, size, and branding details perfectly in this new context. \n\n" + finalPromptText;
+        finalPromptText = "CORE INSTRUCTION: Use the provided image as the ABSOLUTE visual reference for the product. Recreate the product's EXACT appearance, size, and branding details perfectly in this new context. nn" + finalPromptText;
       }
-      finalPromptText += `\n\nGeneration ID: ${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      finalPromptText += `nnGeneration ID: ${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
       const generateWithModel = async (modelName: string, config: any, retries = 2, usePlatformKey = false, customParts?: any[]) => {
         if (isAbortedRef.current) throw new Error('ABORTED');
@@ -3151,7 +3184,7 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
 
       const parts: any[] = [];
       if (productImages.length > 0) {
-        const match = productImages[0].match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+        const match = productImages[0].match(/^data:(image/[a-zA-Z+]+);base64,(.+)$/);
         if (match) {
           parts.push({
             inlineData: {
@@ -3172,7 +3205,9 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
         // gemini-2.5-flash-image only supports up to 1K
         if (selectedImageModel === 'gemini-2.5-flash-image') {
           // No imageSize param needed — defaults to 1K (max for this model)
-        } else {
+        } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
           // For Pro and Nano Banana 2, minimum is 1K
           const effectiveSize = imageSize === '512' ? '1K' : imageSize;
           imageConfig.imageSize = effectiveSize as any;
@@ -3266,7 +3301,9 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
             };
             if (selectedImageModel === 'gemini-2.5-flash-image') {
               // No imageSize for flash
-            } else {
+            } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
               const effectiveSize = imageSize === '512' ? '1K' : imageSize;
               genericImageConfig.imageSize = effectiveSize as any;
             }
@@ -3279,7 +3316,9 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
             console.error('Genericized prompt also failed:', e);
             throw primaryError; // Throw original error if generic also fails
           }
-        } else {
+        } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
           console.error('Primary model failed after retries:', primaryError);
           throw primaryError;
         }
@@ -3306,7 +3345,9 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
       if (!base64Image) {
         if (textResponse) {
           throw new Error(`Model refused to generate image: ${textResponse.substring(0, 100)}${textResponse.length > 100 ? '...' : ''}`);
-        } else {
+        } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
           throw new Error('No image generated by the model.');
         }
       }
@@ -3320,7 +3361,9 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
       if (logoImage) {
         const withLogo = await applyLogoOverlay(compressedImage, logoImage, logoPosition, logoScale, logoOpacity);
         setFinalImageWithLogo(withLogo);
-      } else {
+      } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
         setFinalImageWithLogo(compressedImage);
       }
     } catch (error: any) {
@@ -3596,7 +3639,8 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                 <div className="p-6 bg-card rounded-2xl border border-border/50">
                   <div className="flex items-center justify-between mb-4">
                     <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground">Hook Text (Headline)</label>
-                    <select
+                    <div className="relative">
+                  <select
                       value={headlineLength}
                       onChange={(e) => setHeadlineLength(e.target.value)}
                       className="text-[10px] bg-background border border-border rounded-lg px-2 py-1 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
@@ -3606,6 +3650,8 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                       <option value="Medium">Medium (4-7 words)</option>
                       <option value="Long">Long (8+ words)</option>
                     </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
                   </div>
                   
                   {generatedHooks.length > 0 ? (
@@ -3638,6 +3684,7 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
 
                 <div className="space-y-2">
                   <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">Content Style / Vibe</label>
+                  <div className="relative">
                   <select
                     value={tone}
                     onChange={(e) => setTone(e.target.value)}
@@ -3654,10 +3701,13 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                     <option value="Glowing & Youthful (Aspirational)">Glowing & Youthful (Aspirational)</option>
                     <option value="Direct & Results-Driven">Direct & Results-Driven</option>
                   </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">Text Overlay Style</label>
+                  <div className="relative">
                   <select 
                     value={textOverlayStyle} 
                     onChange={(e) => setTextOverlayStyle(e.target.value)} 
@@ -3688,12 +3738,15 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                     <option value="K-Beauty Glow (Soft rounded Korean-style typography, subtle dewy glow behind text, pastel gradient fill, youthful glass-skin energy)">K-Beauty Glow</option>
                     <option value="Marble & Mauve (Luxurious marble texture fill inside bold serif letters, mauve and dusty rose accent lines, premium spa branding aesthetic)">Marble & Mauve</option>
                   </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">Aspect Ratio</label>
-                    <select 
+                    <div className="relative">
+                  <select 
                       value={aspectRatio} 
                       onChange={(e) => setAspectRatio(e.target.value)} 
                       className="w-full px-4 py-3.5 bg-card border border-border rounded-2xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer"
@@ -3702,10 +3755,13 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                       <option value="9:16">9:16 Vertical</option>
                       <option value="16:9">16:9 Landscape</option>
                     </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
                   </div>
                 
                 <div className="space-y-2">
                   <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">Image Style</label>
+                  <div className="relative">
                   <select 
                     value={imageStyle} 
                     onChange={(e) => { setImageStyle(e.target.value); if (e.target.value !== 'Auto (AI Recommended)') setAutoStyleAnalysis(''); }} 
@@ -3752,6 +3808,8 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                     <option value="Sulwhasoo Heritage Gold">🏮 Sulwhasoo Heritage Gold (Asian Luxe)</option>
                     <option value="Charlotte Tilbury Pillow Talk">💋 Charlotte Tilbury Pillow Talk (Nude Glam)</option>
                   </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
                   {imageStyle === 'Auto (AI Recommended)' && (
                     <div className="mt-2 p-3 bg-gradient-to-r from-primary/5 via-purple-500/5 to-pink-500/5 border border-primary/20 rounded-xl">
                       <div className="flex items-center gap-2 mb-1">
@@ -3772,6 +3830,7 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
 
                 <div className="space-y-2">
                   <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">Quality</label>
+                  <div className="relative">
                   <select 
                     value={imageSize} 
                     onChange={(e) => setImageSize(e.target.value)} 
@@ -3782,6 +3841,8 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                     <option value="2K">2K QHD</option>
                     <option value="4K">4K UHD</option>
                   </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
                 </div>
               </div>
 
@@ -3837,7 +3898,8 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                         <div className="grid grid-cols-2 gap-4 mt-6">
                           <div className="space-y-2">
                             <label className="block text-[9px] uppercase font-bold text-muted-foreground">Position</label>
-                            <select 
+                            <div className="relative">
+                  <select 
                               value={logoPosition} 
                               onChange={(e) => setLogoPosition(e.target.value)}
                               className="w-full px-3 py-2 text-xs bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -3847,6 +3909,8 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                               <option value="bottom-left">Bottom Left</option>
                               <option value="bottom-right">Bottom Right</option>
                             </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
                           </div>
                           <div className="space-y-2">
                             <label className="block text-[9px] uppercase font-bold text-muted-foreground">Scale</label>
@@ -3908,6 +3972,7 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
 
                 <div className="space-y-2">
                   <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">AI Engine</label>
+                  <div className="relative">
                   <select 
                     value={selectedImageModel}
                     onChange={(e) => setSelectedImageModel(e.target.value)}
@@ -3917,6 +3982,8 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                     <option value="gemini-2.5-flash-image-preview">Nano Banana 2 (Experimental)</option>
                     <option value="gemini-2.5-flash-image">Nano Banana (Fastest)</option>
                   </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
                 </div>
 
                 <div className="pt-6 border-t border-border flex gap-3">
@@ -4009,7 +4076,7 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                     <div className="absolute inset-0 bg-neutral-900 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
                       <a 
                         href={finalImageWithLogo} 
-                        download={`day-${selectedDay.day}-${productName.replace(/\s+/g, '-').toLowerCase()}.png`} 
+                        download={`day-${selectedDay.day}-${productName.replace(/s+/g, '-').toLowerCase()}.png`} 
                         className="btn-premium-chrome px-8 py-4 rounded-full font-medium flex items-center gap-2"
                       >
                         <Download className="w-4 h-4" /> Download Image
@@ -4620,7 +4687,8 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                     {/* Campaign Goal */}
                     <div className="space-y-1.5">
                       <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">Campaign Goal</label>
-                      <select
+                      <div className="relative">
+                  <select
                         value={editFormData.campaign_goal}
                         onChange={(e) => setEditFormData(prev => ({ ...prev, campaign_goal: e.target.value }))}
                         className="w-full px-4 py-3 bg-card border border-border rounded-2xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer text-sm"
@@ -4631,12 +4699,15 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                         <option value="Educate audience">Educate audience</option>
                         <option value="Build community">Build community</option>
                       </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
                     </div>
 
                     {/* Framework */}
                     <div className="space-y-1.5">
                       <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">Marketing Framework</label>
-                      <select
+                      <div className="relative">
+                  <select
                         value={editFormData.framework}
                         onChange={(e) => setEditFormData(prev => ({ ...prev, framework: e.target.value }))}
                         className="w-full px-4 py-3 bg-card border border-border rounded-2xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer text-sm"
@@ -4653,12 +4724,15 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                         <option value="QUEST (Qualify, Understand, Educate, Stimulate, Transition)">QUEST</option>
                         <option value="PASTOR (Problem, Amplify, Story, Transformation, Offer, Response)">PASTOR</option>
                       </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
                     </div>
 
                     {/* Platform */}
                     <div className="space-y-1.5">
                       <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">Platform</label>
-                      <select
+                      <div className="relative">
+                  <select
                         value={editFormData.platform}
                         onChange={(e) => setEditFormData(prev => ({ ...prev, platform: e.target.value }))}
                         className="w-full px-4 py-3 bg-card border border-border rounded-2xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer text-sm"
@@ -4668,6 +4742,8 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                         <option value="Twitter / X (Short-form)">Twitter / X</option>
                         <option value="Facebook (Community-focused)">Facebook</option>
                       </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
                     </div>
 
 
@@ -4675,7 +4751,8 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                     <div className="grid grid-cols-3 gap-3">
                       <div className="space-y-1.5">
                         <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">Days</label>
-                        <select
+                        <div className="relative">
+                  <select
                           value={editFormData.days_count}
                           onChange={(e) => setEditFormData(prev => ({ ...prev, days_count: parseInt(e.target.value), reels_count: 0, carousel_count: 0 }))}
                           className="w-full px-3 py-3 bg-card border border-border rounded-2xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm"
@@ -4686,6 +4763,8 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                           <option value={21}>21</option>
                           <option value={30}>30</option>
                         </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
                       </div>
                       <div className="space-y-1.5">
                         <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">Reels</label>
@@ -5158,7 +5237,8 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
               </div>
               <div className="space-y-2">
                 <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">Campaign Goal</label>
-                <select
+                <div className="relative">
+                  <select
                   value={campaignGoal}
                   onChange={(e) => setCampaignGoal(e.target.value)}
                   className="w-full px-4 py-3.5 bg-card border border-border rounded-2xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer text-sm"
@@ -5169,10 +5249,13 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                   <option value="Educate audience">Educate audience</option>
                   <option value="Build community">Build community</option>
                 </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">Marketing Framework</label>
-                <select
+                <div className="relative">
+                  <select
                   value={framework}
                   onChange={(e) => setFramework(e.target.value)}
                   className="w-full px-4 py-3.5 bg-card border border-border rounded-2xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer text-sm"
@@ -5189,11 +5272,14 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                   <option value="QUEST (Qualify, Understand, Educate, Stimulate, Transition)">QUEST (Qualify, Understand, Educate, Stimulate, Transition)</option>
                   <option value="PASTOR (Problem, Amplify, Story, Transformation, Offer, Response)">PASTOR (Problem, Amplify, Story, Transformation, Offer, Response)</option>
                 </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
               </div>
 
               <div className="space-y-2">
                 <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">Primary Platform</label>
-                <select
+                <div className="relative">
+                  <select
                   value={platform}
                   onChange={(e) => setPlatform(e.target.value)}
                   className="w-full px-4 py-3.5 bg-card border border-border rounded-2xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer text-sm"
@@ -5203,6 +5289,8 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                   <option value="Twitter / X (Short-form)">Twitter / X (Short-form)</option>
                   <option value="Facebook (Community-focused)">Facebook (Community-focused)</option>
                 </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
               </div>
               
               <div className="space-y-6 pt-8 border-t border-border">
@@ -5210,6 +5298,7 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                 
                 <div className="space-y-2">
                   <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">Content Pillars</label>
+                  <div className="relative">
                   <select
                     value={contentPillars}
                     onChange={(e) => setContentPillars(e.target.value)}
@@ -5222,10 +5311,13 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                     <option value="Promotional, Educational, Entertaining (The 3 E's)">Promotional, Educational, Entertaining (The 3 E&apos;s)</option>
                     <option value="Relatable Struggle, Glow Up, Review">Relatable Struggle, Glow Up, Review</option>
                   </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">Call-to-Action Style</label>
+                  <div className="relative">
                   <select
                     value={ctaStyle}
                     onChange={(e) => setCtaStyle(e.target.value)}
@@ -5236,12 +5328,15 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                     <option value="အပြန်အလှန်ဆွေးနွေးရန် (Comment ရေးပါ / Tag တွဲပါ)">အပြန်အလှန်ဆွေးနွေးရန် (Comment ရေးပါ / Tag တွဲပါ)</option>
                     <option value="သွယ်ဝိုက်ရောင်းချရန် (အသေးစိတ်သိရှိရန် / DM ပို့ပါ)">သွယ်ဝိုက်ရောင်းချရန် (အသေးစိတ်သိရှိရန် / DM ပို့ပါ)</option>
                   </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
                   <div className="col-span-2 space-y-2">
                     <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">Campaign Duration (Days)</label>
-                    <select
+                    <div className="relative">
+                  <select
                       value={daysCount}
                       onChange={(e) => {
                         const val = parseInt(e.target.value);
@@ -5257,6 +5352,8 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                       <option value={21}>21 Days</option>
                       <option value={30}>30 Days</option>
                     </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
                   </div>
                   <div className="space-y-2">
                     <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">Reels Count</label>
@@ -5311,7 +5408,8 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
             <div className="space-y-6">
               <div className="space-y-2">
                 <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">Content Style</label>
-                <select
+                <div className="relative">
+                  <select
                   value={standaloneEngagementStyle}
                   onChange={(e) => setStandaloneEngagementStyle(e.target.value)}
                   className="w-full px-4 py-3.5 bg-card border border-border rounded-2xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer text-sm font-semibold text-primary"
@@ -5327,11 +5425,14 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                     <option value="Q&A / FAQ (အမေးများသော မေးခွန်းများကို ဖြေကြားပေးခြင်း)">9. Q&A / FAQ</option>
                     <option value="Product Spotlight (ထုတ်ကုန်၏ သေချာဆွဲဆောင်မှုရှိသော အသေးစိတ်ပုံရိပ်များ)">10. Product Spotlight</option>
                 </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
               </div>
 
               <div className="space-y-2">
                 <label className="block text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground ml-1">Blueprint Duration</label>
-                <select
+                <div className="relative">
+                  <select
                   value={standaloneDaysCount}
                   onChange={(e) => setStandaloneDaysCount(parseInt(e.target.value))}
                   className="w-full px-4 py-3.5 bg-card border border-border rounded-2xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer text-sm font-semibold text-neutral-800 dark:text-neutral-200"
@@ -5341,6 +5442,8 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
                   <option value={15}>15 Days Plan</option>
                   <option value={30}>30 Days Plan</option>
                 </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
               </div>
 
               <button
