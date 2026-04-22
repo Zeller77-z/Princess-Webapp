@@ -193,7 +193,7 @@ const BEAUTY_HEALTH_TRAINING_DATA = {
       viral_score: 5, content_type: 'myth_bust', target_emotion: 'urgency_and_shock',
       recommended_format: 'Myth vs Fact listicle + infographic caption',
       why_viral: 'Sunscreen is the #1 anti-aging product yet most people use it wrong. High stakes = high share rate.',
-      hooks: ['SPF 50 is not double the protection of SPF 30', 'You're aging faster because of this sunscreen mistake', 'Dark skin needs sunscreen too — here's why'],
+      hooks: [`SPF 50 is not double the protection of SPF 30`, `You're aging faster because of this sunscreen mistake`, `Dark skin needs sunscreen too — here's why`],
       keywords: ['sunscreen', 'SPF', 'UV protection', 'anti-aging', 'photoaging', 'UVA', 'UVB', 'broad spectrum'],
       example_post: `Sunscreen myths that are aging your skin right now:nnMYTH: SPF 50 = double the protection of SPF 30nFACT: SPF 30 blocks 97%. SPF 50 blocks 98%. The real difference? How long before you reapply.nnMYTH: Dark skin doesn't need sunscreennFACT: UV damage causes hyperpigmentation, skin cancer, and premature aging on ALL skin tones.nnMYTH: My foundation has SPF so I'm coverednFACT: You'd need to apply 7x your normal foundation amount to get the labeled SPF.nnThe rule: Apply every morning. Reapply every 2 hours outdoors.`
     },
@@ -220,7 +220,7 @@ const BEAUTY_HEALTH_TRAINING_DATA = {
       viral_score: 5, content_type: 'science_explainer_empathy', target_emotion: 'validation_and_hope',
       recommended_format: 'Science explainer + mini stress-skin protocol',
       why_viral: 'Stress is universal. The mind-skin connection validates what people feel but can't explain. "This explains everything" posts drive massive saves.',
-      hooks: ['Your stress is breaking out on your face', 'Why your skin gets worse during hard weeks', 'No product will fix stress-induced acne — here's what will'],
+      hooks: [`Your stress is breaking out on your face`, `Why your skin gets worse during hard weeks`, `No product will fix stress-induced acne — here's what will`],
       keywords: ['cortisol acne', 'stress skin', 'mind skin connection', 'holistic skincare', 'hormonal acne stress', 'sebum cortisol'],
       example_post: `If your skin gets worse when life gets harder — that's not a coincidence.nnWhen you're stressed, cortisol spikes. Cortisol tells your skin to produce more oil. More oil = clogged pores = breakouts. It also slows cell turnover, causing dullness, and triggers inflammation that worsens eczema, rosacea, and psoriasis.nnNo new serum won't fix stress-induced breakouts. Your nervous system needs to calm first.nnStress-skin reset (5 minutes):n• Morning: 4-7-8 breathing × 3 rounds before checking your phonen• Evening: No screens 30 min before bedn• Daily: 2L of water. Cortisol is more damaging when you're dehydratedn• Weekly: One thing you genuinely enjoy — not productive, just joyfulnnYour skin is a mirror of your internal state. Being kind to yourself IS skincare.`
     },
@@ -238,7 +238,7 @@ const BEAUTY_HEALTH_TRAINING_DATA = {
       viral_score: 5, content_type: 'myth_bust_practical', target_emotion: 'surprise_and_practical_insight',
       recommended_format: 'Myth-bust format + correct hydration method',
       why_viral: '"Drink more water" is the most repeated beauty advice. Showing it's more nuanced surprises everyone. Drives shares and saves.',
-      hooks: ['8 glasses a day is wrong — here's your actual hydration number', 'Why drinking more water isn't clearing your skin', 'The hydration mistake keeping your skin dry'],
+      hooks: [`8 glasses a day is wrong — here's your actual hydration number`, `Why drinking more water isn't clearing your skin`, `The hydration mistake keeping your skin dry`],
       keywords: ['skin hydration', 'electrolytes skin', 'hydration myths', 'cellular hydration', 'dewy skin', 'intracellular hydration'],
       example_post: `"Drink 8 glasses of water a day" — this advice is oversimplified and might be why your skin is still dry.nnMYTH: Everyone needs 8 glasses dailynFACT: Your needs depend on weight, climate, activity level, and diet.nnMYTH: Water alone hydrates your skinnFACT: Without electrolytes, water moves through you without fully hydrating cells. Intracellular hydration makes skin plump.nnMYTH: Crystal clear urine = optimal hydrationnFACT: Pale yellow is ideal. Clear urine means you're flushing electrolytes.nnHydrate smarter:n• Add cucumber, lemon, or a pinch of sea salt to watern• Eat water-rich foods: watermelon, cucumber, celeryn• Electrolyte boost: coconut water, banana, leafy greens`
     },
@@ -247,7 +247,7 @@ const BEAUTY_HEALTH_TRAINING_DATA = {
       viral_score: 4, content_type: 'how_to_guide', target_emotion: 'discovery_and_empowerment',
       recommended_format: 'Science explainer + step-by-step routine',
       why_viral: 'Trending wellness topic with high visual interest, immediate DIY application, and satisfying before/after potential.',
-      hooks: ['Why your face is puffy every morning — and the 3-minute fix', 'Gua sha actually works — here's the science behind it', 'The morning routine that drains your face in 3 minutes'],
+      hooks: [`Why your face is puffy every morning — and the 3-minute fix`, `Gua sha actually works — here's the science behind it`, `The morning routine that drains your face in 3 minutes`],
       keywords: ['lymphatic drainage', 'gua sha', 'facial massage', 'face depuff', 'morning beauty routine', 'jade roller'],
       example_post: `Your face is puffy every morning and no product is fixing it.nnYour lymphatic system is your body's drainage network. It removes toxins, excess fluid, and cellular waste. When sluggish, fluid pools in your face.nnSigns your facial lymph is backed up:n• Puffy eyes and cheeks every morningn• Dull, grey-looking skinn• Persistent dark circlesnn3-minute morning drainage routine:n1. Cold water: Splash cold water × 10. Temperature change stimulates lymph.n2. Gentle massage: Press lymph nodes on neck sides downward × 5. Opens the drain.n3. Gua sha sweep: Neck up to jawline, jawline to ear, cheekbone to temple. Light pressure. 3 sweeps each.`
     },
