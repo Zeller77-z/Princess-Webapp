@@ -26,9 +26,7 @@ const callAI = async (
   model: string,
   contents: any,
   config?: any,
-  userApiKey?: string,
-  stream: boolean = false,
-  onChunk?: (text: string) => void
+  userApiKey?: string
 ): Promise<{ text: string; candidates?: any }> => {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -44,7 +42,7 @@ const callAI = async (
     const res = await fetch('/api/generate', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ model, contents, config, stream }),
+      body: JSON.stringify({ model, contents, config }),
       signal: controller.signal
     });
     
@@ -57,23 +55,6 @@ const callAI = async (
       error.code = errorBody.status || res.status;
       error.error = errorBody.error_details || { code: res.status, status: res.status >= 500 ? 'UNAVAILABLE' : 'FAILED' };
       throw error;
-    }
-
-    if (stream) {
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-      let fullText = '';
-      
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          fullText += chunk;
-          if (onChunk) onChunk(fullText);
-        }
-      }
-      return { text: fullText };
     }
 
     return res.json();
@@ -203,90 +184,90 @@ const BEAUTY_HEALTH_TRAINING_DATA = {
       viral_score: 5, content_type: 'myth_bust_educational', target_emotion: 'relief_and_aha_moment',
       recommended_format: 'Myth-bust carousel + before/after text comparison',
       why_viral: 'Everyone has experienced "my skincare stopped working" — massive relatability drives saves and shares.',
-      hooks: [`Over-exfoliating is destroying your skin and you don't even know it`, `Why your expensive skincare isn't working anymore`, `The real reason your skin is always dry`],
+      hooks: ['Over-exfoliating is destroying your skin and you don't even know it', 'Why your expensive skincare isn't working anymore', 'The real reason your skin is always dry'],
       keywords: ['skin barrier', 'ceramide', 'over-exfoliation', 'sensitive skin', 'barrier repair', 'lipid layer', 'skin inflammation'],
-      example_post: `Your moisturizer stopped working? Your skin barrier might be damaged — and your skincare routine could be the cause.nnSigns your barrier is broken:n• Skin feels tight even after moisturizingn• Redness and sensitivity to products you used to toleraten• Breakouts in unusual spotsn• Burning sensation when applying serumsnnSurprising causes:n1. Over-exfoliating (2x a week max)n2. Using too many active ingredients at oncen3. Hot showers — they strip your lipid layernnThe fix: Stop all actives. Switch to a fragrance-free gentle cleanser. Layer a ceramide moisturizer. Give it 2 weeks.nnMyth: If it tingles, it's working. NO — tingling = irritation = barrier damage.`
+      example_post: 'Your moisturizer stopped working? Your skin barrier might be damaged — and your skincare routine could be the cause.nnSigns your barrier is broken:n• Skin feels tight even after moisturizingn• Redness and sensitivity to products you used to toleraten• Breakouts in unusual spotsn• Burning sensation when applying serumsnnSurprising causes:n1. Over-exfoliating (2x a week max)n2. Using too many active ingredients at oncen3. Hot showers — they strip your lipid layernnThe fix: Stop all actives. Switch to a fragrance-free gentle cleanser. Layer a ceramide moisturizer. Give it 2 weeks.nnMyth: If it tingles, it's working. NO — tingling = irritation = barrier damage.'
     },
     {
       id: 'topic_002', category: 'skincare', title: 'SPF myths that are aging your skin faster',
       viral_score: 5, content_type: 'myth_bust', target_emotion: 'urgency_and_shock',
       recommended_format: 'Myth vs Fact listicle + infographic caption',
       why_viral: 'Sunscreen is the #1 anti-aging product yet most people use it wrong. High stakes = high share rate.',
-      hooks: [`SPF 50 is not double the protection of SPF 30`, `You're aging faster because of this sunscreen mistake`, `Dark skin needs sunscreen too — here's why`],
+      hooks: ['SPF 50 is not double the protection of SPF 30', 'You're aging faster because of this sunscreen mistake', 'Dark skin needs sunscreen too — here's why'],
       keywords: ['sunscreen', 'SPF', 'UV protection', 'anti-aging', 'photoaging', 'UVA', 'UVB', 'broad spectrum'],
-      example_post: `Sunscreen myths that are aging your skin right now:nnMYTH: SPF 50 = double the protection of SPF 30nFACT: SPF 30 blocks 97%. SPF 50 blocks 98%. The real difference? How long before you reapply.nnMYTH: Dark skin doesn't need sunscreennFACT: UV damage causes hyperpigmentation, skin cancer, and premature aging on ALL skin tones.nnMYTH: My foundation has SPF so I'm coverednFACT: You'd need to apply 7x your normal foundation amount to get the labeled SPF.nnThe rule: Apply every morning. Reapply every 2 hours outdoors.`
+      example_post: 'Sunscreen myths that are aging your skin right now:nnMYTH: SPF 50 = double the protection of SPF 30nFACT: SPF 30 blocks 97%. SPF 50 blocks 98%. The real difference? How long before you reapply.nnMYTH: Dark skin doesn't need sunscreennFACT: UV damage causes hyperpigmentation, skin cancer, and premature aging on ALL skin tones.nnMYTH: My foundation has SPF so I'm coverednFACT: You'd need to apply 7x your normal foundation amount to get the labeled SPF.nnThe rule: Apply every morning. Reapply every 2 hours outdoors.'
     },
     {
       id: 'topic_003', category: 'nutrition', title: 'Foods that secretly cause skin inflammation',
       viral_score: 5, content_type: 'educational_list', target_emotion: 'surprise_and_actionable_relief',
       recommended_format: 'Countdown list with swap suggestions',
       why_viral: 'Food-skin connection is extremely shareable. People are shocked by hidden culprits. Swap format makes it actionable.',
-      hooks: [`The breakfast food that's making your acne worse`, `6 foods your dermatologist quietly avoids`, `Cut these 6 foods for clearer skin in 3 days`],
+      hooks: ['The breakfast food that's making your acne worse', '6 foods your dermatologist quietly avoids', 'Cut these 6 foods for clearer skin in 3 days'],
       keywords: ['anti-inflammatory diet', 'skin food', 'acne diet', 'gut skin connection', 'dairy acne', 'sugar acne', 'omega-6 inflammation'],
-      example_post: `The food in your breakfast might be why your skin won't clear up.nnFoods silently inflaming your skin:n1. Refined sugar → spikes insulin → triggers excess sebum → breakouts (Swap: Berries + dark chocolate)n2. Dairy milk → contains hormones that stimulate oil glands (Swap: Oat milk)n3. Vegetable oils → high omega-6 → promotes inflammation (Swap: Olive oil)n4. White bread & white rice → high glycemic → insulin spike (Swap: Sweet potato, quinoa)n5. Alcohol → dehydrates skin, depletes zinc (Swap: Sparkling water with lemon)n6. Processed snacks → trans fats → disrupt fatty acid balance (Swap: Nuts, seeds, hummus)nn3-day skin reset: Eliminate all 6. Add salmon, leafy greens, and zinc-rich pumpkin seeds.`
+      example_post: 'The food in your breakfast might be why your skin won't clear up.nnFoods silently inflaming your skin:n1. Refined sugar → spikes insulin → triggers excess sebum → breakouts (Swap: Berries + dark chocolate)n2. Dairy milk → contains hormones that stimulate oil glands (Swap: Oat milk)n3. Vegetable oils → high omega-6 → promotes inflammation (Swap: Olive oil)n4. White bread & white rice → high glycemic → insulin spike (Swap: Sweet potato, quinoa)n5. Alcohol → dehydrates skin, depletes zinc (Swap: Sparkling water with lemon)n6. Processed snacks → trans fats → disrupt fatty acid balance (Swap: Nuts, seeds, hummus)nn3-day skin reset: Eliminate all 6. Add salmon, leafy greens, and zinc-rich pumpkin seeds.'
     },
     {
       id: 'topic_004', category: 'nutrition', title: 'Collagen-boosting foods vs collagen supplements — the truth',
       viral_score: 4, content_type: 'comparison_educational', target_emotion: 'informed_skepticism_and_empowerment',
       recommended_format: 'Balanced comparison post + science-light explanation',
       why_viral: 'Collagen supplements are a billion-dollar market. The nuanced truth surprises people and drives debate.',
-      hooks: [`Your body destroys collagen supplements before they reach your skin`, `Why vitamin C is better than collagen powder`, `The truth about collagen supplements nobody tells you`],
+      hooks: ['Your body destroys collagen supplements before they reach your skin', 'Why vitamin C is better than collagen powder', 'The truth about collagen supplements nobody tells you'],
       keywords: ['collagen supplement', 'collagen food', 'anti-aging nutrition', 'vitamin C skin', 'collagen peptides', 'proline', 'glycine'],
-      example_post: `Spending money on collagen supplements? Here's what you actually need to know.nnWhat collagen does: Keeps skin firm, plump, and bouncy. After 25, your body produces 1% less each year.nnThe supplement truth: When you swallow collagen, your stomach breaks it into amino acids. Your body reassembles them wherever it decides — not necessarily your skin.nnFoods that directly boost collagen production:n• Oranges, kiwi, bell peppers → Vitamin C (essential co-factor)n• Pumpkin seeds, chickpeas → Zincn• Dark chocolate, sesame → Coppern• Bone broth, chicken skin → Proline (collagen precursor)n• Egg whites → Glycine + prolinennThe verdict: A Vitamin C-rich diet is the most evidence-backed collagen strategy.`
+      example_post: 'Spending money on collagen supplements? Here's what you actually need to know.nnWhat collagen does: Keeps skin firm, plump, and bouncy. After 25, your body produces 1% less each year.nnThe supplement truth: When you swallow collagen, your stomach breaks it into amino acids. Your body reassembles them wherever it decides — not necessarily your skin.nnFoods that directly boost collagen production:n• Oranges, kiwi, bell peppers → Vitamin C (essential co-factor)n• Pumpkin seeds, chickpeas → Zincn• Dark chocolate, sesame → Coppern• Bone broth, chicken skin → Proline (collagen precursor)n• Egg whites → Glycine + prolinennThe verdict: A Vitamin C-rich diet is the most evidence-backed collagen strategy.'
     },
     {
       id: 'topic_005', category: 'mental_health', title: 'Stress and skin — the cortisol-acne connection',
       viral_score: 5, content_type: 'science_explainer_empathy', target_emotion: 'validation_and_hope',
       recommended_format: 'Science explainer + mini stress-skin protocol',
       why_viral: 'Stress is universal. The mind-skin connection validates what people feel but can't explain. "This explains everything" posts drive massive saves.',
-      hooks: [`Your stress is breaking out on your face`, `Why your skin gets worse during hard weeks`, `No product will fix stress-induced acne — here's what will`],
+      hooks: ['Your stress is breaking out on your face', 'Why your skin gets worse during hard weeks', 'No product will fix stress-induced acne — here's what will'],
       keywords: ['cortisol acne', 'stress skin', 'mind skin connection', 'holistic skincare', 'hormonal acne stress', 'sebum cortisol'],
-      example_post: `If your skin gets worse when life gets harder — that's not a coincidence.nnWhen you're stressed, cortisol spikes. Cortisol tells your skin to produce more oil. More oil = clogged pores = breakouts. It also slows cell turnover, causing dullness, and triggers inflammation that worsens eczema, rosacea, and psoriasis.nnNo new serum won't fix stress-induced breakouts. Your nervous system needs to calm first.nnStress-skin reset (5 minutes):n• Morning: 4-7-8 breathing × 3 rounds before checking your phonen• Evening: No screens 30 min before bedn• Daily: 2L of water. Cortisol is more damaging when you're dehydratedn• Weekly: One thing you genuinely enjoy — not productive, just joyfulnnYour skin is a mirror of your internal state. Being kind to yourself IS skincare.`
+      example_post: 'If your skin gets worse when life gets harder — that's not a coincidence.nnWhen you're stressed, cortisol spikes. Cortisol tells your skin to produce more oil. More oil = clogged pores = breakouts. It also slows cell turnover, causing dullness, and triggers inflammation that worsens eczema, rosacea, and psoriasis.nnNo new serum won't fix stress-induced breakouts. Your nervous system needs to calm first.nnStress-skin reset (5 minutes):n• Morning: 4-7-8 breathing × 3 rounds before checking your phonen• Evening: No screens 30 min before bedn• Daily: 2L of water. Cortisol is more damaging when you're dehydratedn• Weekly: One thing you genuinely enjoy — not productive, just joyfulnnYour skin is a mirror of your internal state. Being kind to yourself IS skincare.'
     },
     {
       id: 'topic_006', category: 'mental_health', title: 'Sleep deprivation's visible effects on your appearance',
       viral_score: 4, content_type: 'motivational_educational', target_emotion: 'motivating_shock',
       recommended_format: 'Visual effects list + sleep optimization tips',
       why_viral: 'Sleep beauty is a concept people know but underestimate. Specific biological details turn vague advice into compelling must-change motivation.',
-      hooks: [`Your skin ages faster when you sleep less than 6 hours`, `6 things sleep deprivation is doing to your face right now`, `Free anti-aging treatment you're skipping every night`],
+      hooks: ['Your skin ages faster when you sleep less than 6 hours', '6 things sleep deprivation is doing to your face right now', 'Free anti-aging treatment you're skipping every night'],
       keywords: ['beauty sleep', 'sleep skin', 'HGH skin repair', 'collagen sleep', 'circadian rhythm skin', 'undereye circles sleep'],
-      example_post: `"I'll sleep when I'm dead" — your skin is aging faster because of this mindset.nnWhat happens when you sleep:nHours 1-4: Melatonin rises, cell damage slows.nHours 5-8: Human Growth Hormone peaks → collagen production accelerates → skin cells regenerate.nn6 signs of chronic sleep deprivation:n1. Dull, grey-toned skin (slowed cell turnover)n2. Puffy eyes (fluid redistribution)n3. Deeper fine lines that don't bounce backn4. Breakouts along jawline (cortisol spike)n5. Darker undereye circles (blood vessel dilation)n6. Dry, dehydrated patchesnn3 sleep habits that ARE skincare:n• Cool room (18-19°C) = deeper sleep = more HGH releasen• Silk pillowcase = less friction = fewer morning creasesn• Consistent sleep time = circadian rhythm = predictable skin repair`
+      example_post: '"I'll sleep when I'm dead" — your skin is aging faster because of this mindset.nnWhat happens when you sleep:nHours 1-4: Melatonin rises, cell damage slows.nHours 5-8: Human Growth Hormone peaks → collagen production accelerates → skin cells regenerate.nn6 signs of chronic sleep deprivation:n1. Dull, grey-toned skin (slowed cell turnover)n2. Puffy eyes (fluid redistribution)n3. Deeper fine lines that don't bounce backn4. Breakouts along jawline (cortisol spike)n5. Darker undereye circles (blood vessel dilation)n6. Dry, dehydrated patchesnn3 sleep habits that ARE skincare:n• Cool room (18-19°C) = deeper sleep = more HGH releasen• Silk pillowcase = less friction = fewer morning creasesn• Consistent sleep time = circadian rhythm = predictable skin repair'
     },
     {
-      id: 'topic_007', category: 'body_wellness', title: 'Hydration myths — you're probably not drinking water correctly',
+      id: 'topic_007', category: 'body_wellness', title: 'Hydration myths — you\'re probably not drinking water correctly',
       viral_score: 5, content_type: 'myth_bust_practical', target_emotion: 'surprise_and_practical_insight',
       recommended_format: 'Myth-bust format + correct hydration method',
-      why_viral: '"Drink more water" is the most repeated beauty advice. Showing it's more nuanced surprises everyone. Drives shares and saves.',
-      hooks: [`8 glasses a day is wrong — here's your actual hydration number`, `Why drinking more water isn't clearing your skin`, `The hydration mistake keeping your skin dry`],
+      why_viral: '"Drink more water" is the most repeated beauty advice. Showing it\'s more nuanced surprises everyone. Drives shares and saves.',
+      hooks: ['8 glasses a day is wrong — here\'s your actual hydration number', 'Why drinking more water isn\'t clearing your skin', 'The hydration mistake keeping your skin dry'],
       keywords: ['skin hydration', 'electrolytes skin', 'hydration myths', 'cellular hydration', 'dewy skin', 'intracellular hydration'],
-      example_post: `"Drink 8 glasses of water a day" — this advice is oversimplified and might be why your skin is still dry.nnMYTH: Everyone needs 8 glasses dailynFACT: Your needs depend on weight, climate, activity level, and diet.nnMYTH: Water alone hydrates your skinnFACT: Without electrolytes, water moves through you without fully hydrating cells. Intracellular hydration makes skin plump.nnMYTH: Crystal clear urine = optimal hydrationnFACT: Pale yellow is ideal. Clear urine means you're flushing electrolytes.nnHydrate smarter:n• Add cucumber, lemon, or a pinch of sea salt to watern• Eat water-rich foods: watermelon, cucumber, celeryn• Electrolyte boost: coconut water, banana, leafy greens`
+      example_post: '"Drink 8 glasses of water a day" — this advice is oversimplified and might be why your skin is still dry.nnMYTH: Everyone needs 8 glasses dailynFACT: Your needs depend on weight, climate, activity level, and diet.nnMYTH: Water alone hydrates your skinnFACT: Without electrolytes, water moves through you without fully hydrating cells. Intracellular hydration makes skin plump.nnMYTH: Crystal clear urine = optimal hydrationnFACT: Pale yellow is ideal. Clear urine means you're flushing electrolytes.nnHydrate smarter:n• Add cucumber, lemon, or a pinch of sea salt to watern• Eat water-rich foods: watermelon, cucumber, celeryn• Electrolyte boost: coconut water, banana, leafy greens'
     },
     {
       id: 'topic_008', category: 'body_wellness', title: 'Lymphatic drainage — the underrated beauty hack',
       viral_score: 4, content_type: 'how_to_guide', target_emotion: 'discovery_and_empowerment',
       recommended_format: 'Science explainer + step-by-step routine',
       why_viral: 'Trending wellness topic with high visual interest, immediate DIY application, and satisfying before/after potential.',
-      hooks: [`Why your face is puffy every morning — and the 3-minute fix`, `Gua sha actually works — here's the science behind it`, `The morning routine that drains your face in 3 minutes`],
+      hooks: ['Why your face is puffy every morning — and the 3-minute fix', 'Gua sha actually works — here's the science behind it', 'The morning routine that drains your face in 3 minutes'],
       keywords: ['lymphatic drainage', 'gua sha', 'facial massage', 'face depuff', 'morning beauty routine', 'jade roller'],
-      example_post: `Your face is puffy every morning and no product is fixing it.nnYour lymphatic system is your body's drainage network. It removes toxins, excess fluid, and cellular waste. When sluggish, fluid pools in your face.nnSigns your facial lymph is backed up:n• Puffy eyes and cheeks every morningn• Dull, grey-looking skinn• Persistent dark circlesnn3-minute morning drainage routine:n1. Cold water: Splash cold water × 10. Temperature change stimulates lymph.n2. Gentle massage: Press lymph nodes on neck sides downward × 5. Opens the drain.n3. Gua sha sweep: Neck up to jawline, jawline to ear, cheekbone to temple. Light pressure. 3 sweeps each.`
+      example_post: 'Your face is puffy every morning and no product is fixing it.nnYour lymphatic system is your body's drainage network. It removes toxins, excess fluid, and cellular waste. When sluggish, fluid pools in your face.nnSigns your facial lymph is backed up:n• Puffy eyes and cheeks every morningn• Dull, grey-looking skinn• Persistent dark circlesnn3-minute morning drainage routine:n1. Cold water: Splash cold water × 10. Temperature change stimulates lymph.n2. Gentle massage: Press lymph nodes on neck sides downward × 5. Opens the drain.n3. Gua sha sweep: Neck up to jawline, jawline to ear, cheekbone to temple. Light pressure. 3 sweeps each.'
     },
     {
       id: 'topic_009', category: 'skincare', title: 'Retinol beginner guide — why most people quit too early',
       viral_score: 5, content_type: 'comprehensive_guide', target_emotion: 'patience_and_confidence',
-      recommended_format: 'Beginner guide + timeline + do's and don'ts',
+      recommended_format: 'Beginner guide + timeline + do\'s and don\'ts',
       why_viral: 'Retinol is the most-searched skincare ingredient. Quitting during the purge phase is the #1 mistake — drives massive saves as reference guide.',
-      hooks: [`Most people quit retinol right before it starts working`, `The retinol purge is supposed to happen`, `Week-by-week: what retinol actually does to your skin`],
+      hooks: ['Most people quit retinol right before it starts working', 'The retinol purge is supposed to happen', 'Week-by-week: what retinol actually does to your skin'],
       keywords: ['retinol beginner', 'retinol purge', 'retinol sandwich method', 'anti-aging retinol', 'skin cell turnover'],
-      example_post: `You bought retinol. Your skin freaked out. You stopped. That was the biggest mistake.nnWeek-by-week reality:nWeeks 1-2: Dryness, flaking, mild irritation. Normal.nWeeks 3-4: Purging — old debris rises to surface. STILL NORMAL.nWeeks 5-8: Skin calms. Texture improving.nWeeks 9-12: The glow people post about begins.nnHow to start without destroying your skin:n• Frequency: 1x/week → 2x → 3x. Never daily to start.n• Sandwich method: moisturizer → retinol → moisturizern• Always PM only. Retinol degrades in sunlight.n• Start at 0.025% or 0.05%. Not 1%.nnNever combine with:n• AHA/BHA same nightn• Vitamin C same PM applicationn• Benzoyl peroxide (deactivates retinol)nnSPF every morning when using retinol. Non-negotiable.`
+      example_post: 'You bought retinol. Your skin freaked out. You stopped. That was the biggest mistake.nnWeek-by-week reality:nWeeks 1-2: Dryness, flaking, mild irritation. Normal.nWeeks 3-4: Purging — old debris rises to surface. STILL NORMAL.nWeeks 5-8: Skin calms. Texture improving.nWeeks 9-12: The glow people post about begins.nnHow to start without destroying your skin:n• Frequency: 1x/week → 2x → 3x. Never daily to start.n• Sandwich method: moisturizer → retinol → moisturizern• Always PM only. Retinol degrades in sunlight.n• Start at 0.025% or 0.05%. Not 1%.nnNever combine with:n• AHA/BHA same nightn• Vitamin C same PM applicationn• Benzoyl peroxide (deactivates retinol)nnSPF every morning when using retinol. Non-negotiable.'
     },
     {
       id: 'topic_010', category: 'body_wellness', title: 'Gut health and skin — the microbiome-acne connection',
       viral_score: 5, content_type: 'science_explainer_actionable', target_emotion: 'aha_moment_and_empowerment',
       recommended_format: 'Science explainer + 7-day gut reset protocol',
       why_viral: 'Gut-skin axis is one of the fastest-growing beauty science topics. Explains why topical-only approaches fail — huge paradigm shift.',
-      hooks: [`Your acne is a gut problem, not a skin problem`, `Why no skincare routine will fix gut-related breakouts`, `The gut reset that cleared stubborn acne in 3 weeks`],
+      hooks: ['Your acne is a gut problem, not a skin problem', 'Why no skincare routine will fix gut-related breakouts', 'The gut reset that cleared stubborn acne in 3 weeks'],
       keywords: ['gut skin axis', 'microbiome acne', 'leaky gut acne', 'probiotic skin', 'gut reset skin', 'probiotics skin health'],
-      example_post: `Your acne might not be a skincare problem. It might be a gut problem.nnThe gut-skin axis: Your gut contains 70% of your immune system. When balance tips toward harmful bacteria, inflammation travels through your bloodstream and surfaces on your skin.nnSigns your skin issues are gut-related:n1. Acne that doesn't respond to topical treatmentsn2. Eczema that flares with certain foodsn3. Bloating and breakouts happen on the same daysnnLeaky gut pathway: Bad diet → harmful bacteria overgrow → gut wall becomes permeable → toxins enter bloodstream → skin inflammationnnProbiotic foods: Yogurt with live cultures, kimchi, sauerkraut, kefir, miso, tempehnn7-day gut reset:nDays 1-2: Cut sugar and alcohol completelynDays 3-4: Add one probiotic food per daynDays 5-6: Add prebiotic fiber: garlic, onion, banana, oatsnDay 7: Evaluate skin texture, inflammation, energy`
+      example_post: 'Your acne might not be a skincare problem. It might be a gut problem.nnThe gut-skin axis: Your gut contains 70% of your immune system. When balance tips toward harmful bacteria, inflammation travels through your bloodstream and surfaces on your skin.nnSigns your skin issues are gut-related:n1. Acne that doesn't respond to topical treatmentsn2. Eczema that flares with certain foodsn3. Bloating and breakouts happen on the same daysnnLeaky gut pathway: Bad diet → harmful bacteria overgrow → gut wall becomes permeable → toxins enter bloodstream → skin inflammationnnProbiotic foods: Yogurt with live cultures, kimchi, sauerkraut, kefir, miso, tempehnn7-day gut reset:nDays 1-2: Cut sugar and alcohol completelynDays 3-4: Add one probiotic food per daynDays 5-6: Add prebiotic fiber: garlic, onion, banana, oatsnDay 7: Evaluate skin texture, inflammation, energy'
     }
   ],
   content_types: ['educational', 'myth_bust', 'how_to', 'comparison', 'guide', 'science_explainer', 'motivational'],
@@ -662,13 +643,15 @@ export default function Dashboard() {
           if (found.gemini_api_key) {
             setUserApiKey(found.gemini_api_key);
             setHasKey(true);
-          } else {
+          } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
             // Profile exists but no API key — check server fallback
             try {
               const res = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model: 'gemini-2.5-pro', contents: 'test', config: {} }),
+                body: JSON.stringify({ model: 'gemini-2.5-flash', contents: 'test', config: {} }),
               });
               setHasKey(res.status !== 401);
             } catch {
@@ -696,13 +679,15 @@ export default function Dashboard() {
     if (profile.gemini_api_key) {
       setUserApiKey(profile.gemini_api_key);
       setHasKey(true);
+    } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
     } else {
       // Check if server has a fallback key
       try {
         const res = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model: 'gemini-2.5-pro', contents: 'test', config: {} }),
+          body: JSON.stringify({ model: 'gemini-2.5-flash', contents: 'test', config: {} }),
         });
         setHasKey(res.status !== 401);
       } catch {
@@ -874,7 +859,9 @@ export default function Dashboard() {
           .update(payload)
           .eq('id', editingTemplateId);
         if (error) throw error;
-      } else {
+      } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
         // Insert new
         const { error } = await supabase
           .from('campaign_settings')
@@ -932,7 +919,9 @@ export default function Dashboard() {
           }
         }
         setProductImages(loadedImages);
-      } else {
+      } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
         setProductImages([]);
       }
 
@@ -1166,7 +1155,9 @@ export default function Dashboard() {
         if (logoImage) {
           const withLogo = await applyLogoOverlay(generatedImage, logoImage, logoPosition, logoScale, logoOpacity);
           setFinalImageWithLogo(withLogo);
-        } else {
+        } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
           setFinalImageWithLogo(generatedImage);
         }
       }
@@ -1183,6 +1174,8 @@ export default function Dashboard() {
       setToastMessage('API Key invalid or not found. Please update your API key in your profile settings.');
     } else if (isRetryableError(error)) {
       setToastMessage('High demand or quota exceeded. Please wait a moment and try again.');
+    } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
     } else {
       setToastMessage(error.message || defaultMessage);
     }
@@ -1202,7 +1195,9 @@ export default function Dashboard() {
             height *= maxWidth / width;
             width = maxWidth;
           }
-        } else {
+        } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
           if (height > maxHeight) {
             width *= maxHeight / height;
             height = maxHeight;
@@ -1351,7 +1346,7 @@ export default function Dashboard() {
       
       contents.parts.push({ text: prompt });
 
-      const response = await withRetry(() => callAI('gemini-2.5-pro', contents, {
+      const response = await withRetry(() => callAI('gemini-2.5-flash', contents, {
           responseMimeType: "application/json",
           responseSchema: {
             type: SchemaType.OBJECT,
@@ -1444,7 +1439,7 @@ export default function Dashboard() {
       }
       contents.parts.push({ text: prompt });
 
-      const response = await withRetry(() => callAI('gemini-2.5-pro', contents, {
+      const response = await withRetry(() => callAI('gemini-2.5-flash', contents, {
           temperature: 1.3,
           responseMimeType: "application/json",
           responseSchema: {
@@ -1936,7 +1931,7 @@ export default function Dashboard() {
       9. Write the content 100% natively in the Myanmar (Burmese) language. Warm sisterly tone. Never clinical or formal.`;
 
       const contents: any = { parts: [{ text: prompt }] };
-      const response = await withRetry(() => callAI('gemini-2.5-pro', contents, {
+      const response = await withRetry(() => callAI('gemini-2.5-flash', contents, {
           systemInstruction: MYANMAR_BEAUTY_HEALTH_WRITER_PROMPT,
           temperature: 1.4,
           topP: 0.95,
@@ -2161,7 +2156,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
       6. Each hook should use a DIFFERENT hook technique (story, question, number, callout, POV, etc.)
       7. RANDOM SEED: ${Math.random().toString(36).substring(2, 10)}-${Date.now() % 100000} (use this to ensure uniqueness)`;
 
-      const response = await withRetry(() => callAI('gemini-2.5-pro', prompt, {
+      const response = await withRetry(() => callAI('gemini-2.5-flash', prompt, {
           systemInstruction: MYANMAR_STRATEGIST_PROMPT,
           temperature: 1.2 + (currentGenCount * 0.1 > 0.5 ? 0.5 : currentGenCount * 0.1),
           responseMimeType: "application/json",
@@ -2349,7 +2344,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
       }
       `;
 
-      const response = await withRetry(() => callAI('gemini-2.5-pro', prompt, {
+      const response = await withRetry(() => callAI('gemini-2.5-flash', prompt, {
           systemInstruction: MYANMAR_STRATEGIST_PROMPT,
           temperature: 1.0,
           maxOutputTokens: 8192,
@@ -2376,11 +2371,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
             },
             required: ["variations"]
           }
-        }, currentApiKey, true, (text) => {
-          if (text.length > 50) {
-             setToastMessage(`Writing post... (${Math.min(99, Math.floor(text.length / 20))}%)`);
-          }
-        }));
+        }, currentApiKey));
 
       let jsonStr = response.text || '{}';
       jsonStr = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -2432,7 +2423,9 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
         setPostVariations(variations);
         setPostHistory([variations[0].content]);
         setHistoryIndex(0);
-      } else {
+      } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
         console.error("Parsed data does not contain variations:", data);
         throw new Error("Invalid response format");
       }
@@ -2541,7 +2534,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
       }
       `;
 
-      const response = await withRetry(() => callAI('gemini-2.5-pro', prompt, {
+      const response = await withRetry(() => callAI('gemini-2.5-flash', prompt, {
           systemInstruction: MYANMAR_STRATEGIST_PROMPT,
           responseMimeType: "application/json",
           responseSchema: {
@@ -2611,7 +2604,9 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
           setPostHistory([variationData.content]);
           setHistoryIndex(0);
         }
-      } else {
+      } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
         console.error("Parsed data does not contain content:", data);
         throw new Error("Invalid response format");
       }
@@ -2707,7 +2702,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
       3. TARGET AUDIENCE ALIGNMENT: You MUST strictly tailor all hooks to the specific Target Audience ("${targetAudience}"). Speak directly to their specific age group, pain points, desires, and lifestyle. Do not use generic messaging.
       4. Return a JSON array of strings.`;
 
-      const response = await withRetry(() => callAI('gemini-2.5-pro', prompt, {
+      const response = await withRetry(() => callAI('gemini-2.5-flash', prompt, {
           systemInstruction: MYANMAR_STRATEGIST_PROMPT,
           responseMimeType: "application/json",
           responseSchema: {
@@ -2782,7 +2777,9 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
           increment = prev < 50 ? 0.8 : prev < 80 ? 0.4 : 0.2; // ~15s
         } else if (selectedImageModel === 'gemini-2.5-flash-image-preview') {
           increment = prev < 50 ? 0.4 : prev < 80 ? 0.2 : 0.1; // ~30s
-        } else {
+        } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
           increment = prev < 50 ? 0.2 : prev < 80 ? 0.1 : 0.05; // ~60s
         }
         
@@ -2932,7 +2929,9 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
             sceneLighting = 'beauty lighting that emphasizes shine and texture — soft, wrapping light that would make hair gleam. Warm undertone with beautiful specular highlights. Slight backlight creating a luminous halo effect. Shot on Sony A7RV with 70-200mm f/2.8 for beautiful compression and bokeh';
             sceneColor = 'rich, glossy palette — deep chocolate browns, honey gold, warm amber, healthy pink scalp tones, natural wood. Color grading: warm, rich, glossy — emphasizing shine and health';
             sceneAngle = 'close-up beauty angle with the product prominently featured. Shallow depth of field with gorgeous hair-like texture elements in the background';
-          } else {
+          } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
             // DEFAULT: Premium Lifestyle Editorial
             autoStyleName = 'Premium Lifestyle Editorial';
             sceneDescription = 'a world-class lifestyle product photograph that feels like it was shot by a top advertising agency for a major beauty brand. The product is placed in an aspirational, real-life setting that the target audience dreams about. The scene tells a story — not just showing a product, but showing a LIFE. This image must make a Myanmar woman aged 18-35 stop scrolling and immediately save it';
@@ -3206,7 +3205,9 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
         // gemini-2.5-flash-image only supports up to 1K
         if (selectedImageModel === 'gemini-2.5-flash-image') {
           // No imageSize param needed — defaults to 1K (max for this model)
-        } else {
+        } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
           // For Pro and Nano Banana 2, minimum is 1K
           const effectiveSize = imageSize === '512' ? '1K' : imageSize;
           imageConfig.imageSize = effectiveSize as any;
@@ -3300,7 +3301,9 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
             };
             if (selectedImageModel === 'gemini-2.5-flash-image') {
               // No imageSize for flash
-            } else {
+            } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
               const effectiveSize = imageSize === '512' ? '1K' : imageSize;
               genericImageConfig.imageSize = effectiveSize as any;
             }
@@ -3313,7 +3316,9 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
             console.error('Genericized prompt also failed:', e);
             throw primaryError; // Throw original error if generic also fails
           }
-        } else {
+        } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
           console.error('Primary model failed after retries:', primaryError);
           throw primaryError;
         }
@@ -3340,7 +3345,9 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
       if (!base64Image) {
         if (textResponse) {
           throw new Error(`Model refused to generate image: ${textResponse.substring(0, 100)}${textResponse.length > 100 ? '...' : ''}`);
-        } else {
+        } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
           throw new Error('No image generated by the model.');
         }
       }
@@ -3354,7 +3361,9 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
       if (logoImage) {
         const withLogo = await applyLogoOverlay(compressedImage, logoImage, logoPosition, logoScale, logoOpacity);
         setFinalImageWithLogo(withLogo);
-      } else {
+      } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
+      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
+    } else {
         setFinalImageWithLogo(compressedImage);
       }
     } catch (error: any) {
@@ -5539,5 +5548,4 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
     </main>
   );
 }
-
 
