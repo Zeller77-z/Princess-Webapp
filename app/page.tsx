@@ -184,18 +184,18 @@ const BEAUTY_HEALTH_TRAINING_DATA = {
       viral_score: 5, content_type: 'myth_bust_educational', target_emotion: 'relief_and_aha_moment',
       recommended_format: 'Myth-bust carousel + before/after text comparison',
       why_viral: 'Everyone has experienced "my skincare stopped working" — massive relatability drives saves and shares.',
-      hooks: ['Over-exfoliating is destroying your skin and you don't even know it', 'Why your expensive skincare isn't working anymore', 'The real reason your skin is always dry'],
+      hooks: ['Over-exfoliating is destroying your skin and you don\'t even know it', 'Why your expensive skincare isn\'t working anymore', 'The real reason your skin is always dry'],
       keywords: ['skin barrier', 'ceramide', 'over-exfoliation', 'sensitive skin', 'barrier repair', 'lipid layer', 'skin inflammation'],
-      example_post: 'Your moisturizer stopped working? Your skin barrier might be damaged — and your skincare routine could be the cause.nnSigns your barrier is broken:n• Skin feels tight even after moisturizingn• Redness and sensitivity to products you used to toleraten• Breakouts in unusual spotsn• Burning sensation when applying serumsnnSurprising causes:n1. Over-exfoliating (2x a week max)n2. Using too many active ingredients at oncen3. Hot showers — they strip your lipid layernnThe fix: Stop all actives. Switch to a fragrance-free gentle cleanser. Layer a ceramide moisturizer. Give it 2 weeks.nnMyth: If it tingles, it's working. NO — tingling = irritation = barrier damage.'
+      example_post: 'Your moisturizer stopped working? Your skin barrier might be damaged — and your skincare routine could be the cause.nnSigns your barrier is broken:n• Skin feels tight even after moisturizingn• Redness and sensitivity to products you used to toleraten• Breakouts in unusual spotsn• Burning sensation when applying serumsnnSurprising causes:n1. Over-exfoliating (2x a week max)n2. Using too many active ingredients at oncen3. Hot showers — they strip your lipid layernnThe fix: Stop all actives. Switch to a fragrance-free gentle cleanser. Layer a ceramide moisturizer. Give it 2 weeks.nnMyth: If it tingles, it\'s working. NO — tingling = irritation = barrier damage.'
     },
     {
       id: 'topic_002', category: 'skincare', title: 'SPF myths that are aging your skin faster',
       viral_score: 5, content_type: 'myth_bust', target_emotion: 'urgency_and_shock',
       recommended_format: 'Myth vs Fact listicle + infographic caption',
       why_viral: 'Sunscreen is the #1 anti-aging product yet most people use it wrong. High stakes = high share rate.',
-      hooks: ['SPF 50 is not double the protection of SPF 30', 'You're aging faster because of this sunscreen mistake', 'Dark skin needs sunscreen too — here's why'],
+      hooks: ['SPF 50 is not double the protection of SPF 30', 'You're aging faster because of this sunscreen mistake', 'Dark skin needs sunscreen too — here\'s why'],
       keywords: ['sunscreen', 'SPF', 'UV protection', 'anti-aging', 'photoaging', 'UVA', 'UVB', 'broad spectrum'],
-      example_post: 'Sunscreen myths that are aging your skin right now:nnMYTH: SPF 50 = double the protection of SPF 30nFACT: SPF 30 blocks 97%. SPF 50 blocks 98%. The real difference? How long before you reapply.nnMYTH: Dark skin doesn't need sunscreennFACT: UV damage causes hyperpigmentation, skin cancer, and premature aging on ALL skin tones.nnMYTH: My foundation has SPF so I'm coverednFACT: You'd need to apply 7x your normal foundation amount to get the labeled SPF.nnThe rule: Apply every morning. Reapply every 2 hours outdoors.'
+      example_post: 'Sunscreen myths that are aging your skin right now:nnMYTH: SPF 50 = double the protection of SPF 30nFACT: SPF 30 blocks 97%. SPF 50 blocks 98%. The real difference? How long before you reapply.nnMYTH: Dark skin doesn\'t need sunscreennFACT: UV damage causes hyperpigmentation, skin cancer, and premature aging on ALL skin tones.nnMYTH: My foundation has SPF so I'm coverednFACT: You'd need to apply 7x your normal foundation amount to get the labeled SPF.nnThe rule: Apply every morning. Reapply every 2 hours outdoors.'
     },
     {
       id: 'topic_003', category: 'nutrition', title: 'Foods that secretly cause skin inflammation',
@@ -219,19 +219,19 @@ const BEAUTY_HEALTH_TRAINING_DATA = {
       id: 'topic_005', category: 'mental_health', title: 'Stress and skin — the cortisol-acne connection',
       viral_score: 5, content_type: 'science_explainer_empathy', target_emotion: 'validation_and_hope',
       recommended_format: 'Science explainer + mini stress-skin protocol',
-      why_viral: 'Stress is universal. The mind-skin connection validates what people feel but can't explain. "This explains everything" posts drive massive saves.',
-      hooks: ['Your stress is breaking out on your face', 'Why your skin gets worse during hard weeks', 'No product will fix stress-induced acne — here's what will'],
+      why_viral: 'Stress is universal. The mind-skin connection validates what people feel but can\'t explain. "This explains everything" posts drive massive saves.',
+      hooks: ['Your stress is breaking out on your face', 'Why your skin gets worse during hard weeks', 'No product will fix stress-induced acne — here\'s what will'],
       keywords: ['cortisol acne', 'stress skin', 'mind skin connection', 'holistic skincare', 'hormonal acne stress', 'sebum cortisol'],
-      example_post: 'If your skin gets worse when life gets harder — that's not a coincidence.nnWhen you're stressed, cortisol spikes. Cortisol tells your skin to produce more oil. More oil = clogged pores = breakouts. It also slows cell turnover, causing dullness, and triggers inflammation that worsens eczema, rosacea, and psoriasis.nnNo new serum won't fix stress-induced breakouts. Your nervous system needs to calm first.nnStress-skin reset (5 minutes):n• Morning: 4-7-8 breathing × 3 rounds before checking your phonen• Evening: No screens 30 min before bedn• Daily: 2L of water. Cortisol is more damaging when you're dehydratedn• Weekly: One thing you genuinely enjoy — not productive, just joyfulnnYour skin is a mirror of your internal state. Being kind to yourself IS skincare.'
+      example_post: 'If your skin gets worse when life gets harder — that's not a coincidence.nnWhen you\'re stressed, cortisol spikes. Cortisol tells your skin to produce more oil. More oil = clogged pores = breakouts. It also slows cell turnover, causing dullness, and triggers inflammation that worsens eczema, rosacea, and psoriasis.nnNo new serum won't fix stress-induced breakouts. Your nervous system needs to calm first.nnStress-skin reset (5 minutes):n• Morning: 4-7-8 breathing × 3 rounds before checking your phonen• Evening: No screens 30 min before bedn• Daily: 2L of water. Cortisol is more damaging when you\'re dehydratedn• Weekly: One thing you genuinely enjoy — not productive, just joyfulnnYour skin is a mirror of your internal state. Being kind to yourself IS skincare.'
     },
     {
-      id: 'topic_006', category: 'mental_health', title: 'Sleep deprivation's visible effects on your appearance',
+      id: 'topic_006', category: 'mental_health', title: 'Sleep deprivation\'s visible effects on your appearance',
       viral_score: 4, content_type: 'motivational_educational', target_emotion: 'motivating_shock',
       recommended_format: 'Visual effects list + sleep optimization tips',
       why_viral: 'Sleep beauty is a concept people know but underestimate. Specific biological details turn vague advice into compelling must-change motivation.',
-      hooks: ['Your skin ages faster when you sleep less than 6 hours', '6 things sleep deprivation is doing to your face right now', 'Free anti-aging treatment you're skipping every night'],
+      hooks: ['Your skin ages faster when you sleep less than 6 hours', '6 things sleep deprivation is doing to your face right now', 'Free anti-aging treatment you\'re skipping every night'],
       keywords: ['beauty sleep', 'sleep skin', 'HGH skin repair', 'collagen sleep', 'circadian rhythm skin', 'undereye circles sleep'],
-      example_post: '"I'll sleep when I'm dead" — your skin is aging faster because of this mindset.nnWhat happens when you sleep:nHours 1-4: Melatonin rises, cell damage slows.nHours 5-8: Human Growth Hormone peaks → collagen production accelerates → skin cells regenerate.nn6 signs of chronic sleep deprivation:n1. Dull, grey-toned skin (slowed cell turnover)n2. Puffy eyes (fluid redistribution)n3. Deeper fine lines that don't bounce backn4. Breakouts along jawline (cortisol spike)n5. Darker undereye circles (blood vessel dilation)n6. Dry, dehydrated patchesnn3 sleep habits that ARE skincare:n• Cool room (18-19°C) = deeper sleep = more HGH releasen• Silk pillowcase = less friction = fewer morning creasesn• Consistent sleep time = circadian rhythm = predictable skin repair'
+      example_post: '"I'll sleep when I'm dead" — your skin is aging faster because of this mindset.nnWhat happens when you sleep:nHours 1-4: Melatonin rises, cell damage slows.nHours 5-8: Human Growth Hormone peaks → collagen production accelerates → skin cells regenerate.nn6 signs of chronic sleep deprivation:n1. Dull, grey-toned skin (slowed cell turnover)n2. Puffy eyes (fluid redistribution)n3. Deeper fine lines that don\'t bounce backn4. Breakouts along jawline (cortisol spike)n5. Darker undereye circles (blood vessel dilation)n6. Dry, dehydrated patchesnn3 sleep habits that ARE skincare:n• Cool room (18-19°C) = deeper sleep = more HGH releasen• Silk pillowcase = less friction = fewer morning creasesn• Consistent sleep time = circadian rhythm = predictable skin repair'
     },
     {
       id: 'topic_007', category: 'body_wellness', title: 'Hydration myths — you\'re probably not drinking water correctly',
@@ -240,14 +240,14 @@ const BEAUTY_HEALTH_TRAINING_DATA = {
       why_viral: '"Drink more water" is the most repeated beauty advice. Showing it\'s more nuanced surprises everyone. Drives shares and saves.',
       hooks: ['8 glasses a day is wrong — here\'s your actual hydration number', 'Why drinking more water isn\'t clearing your skin', 'The hydration mistake keeping your skin dry'],
       keywords: ['skin hydration', 'electrolytes skin', 'hydration myths', 'cellular hydration', 'dewy skin', 'intracellular hydration'],
-      example_post: '"Drink 8 glasses of water a day" — this advice is oversimplified and might be why your skin is still dry.nnMYTH: Everyone needs 8 glasses dailynFACT: Your needs depend on weight, climate, activity level, and diet.nnMYTH: Water alone hydrates your skinnFACT: Without electrolytes, water moves through you without fully hydrating cells. Intracellular hydration makes skin plump.nnMYTH: Crystal clear urine = optimal hydrationnFACT: Pale yellow is ideal. Clear urine means you're flushing electrolytes.nnHydrate smarter:n• Add cucumber, lemon, or a pinch of sea salt to watern• Eat water-rich foods: watermelon, cucumber, celeryn• Electrolyte boost: coconut water, banana, leafy greens'
+      example_post: '"Drink 8 glasses of water a day" — this advice is oversimplified and might be why your skin is still dry.nnMYTH: Everyone needs 8 glasses dailynFACT: Your needs depend on weight, climate, activity level, and diet.nnMYTH: Water alone hydrates your skinnFACT: Without electrolytes, water moves through you without fully hydrating cells. Intracellular hydration makes skin plump.nnMYTH: Crystal clear urine = optimal hydrationnFACT: Pale yellow is ideal. Clear urine means you\'re flushing electrolytes.nnHydrate smarter:n• Add cucumber, lemon, or a pinch of sea salt to watern• Eat water-rich foods: watermelon, cucumber, celeryn• Electrolyte boost: coconut water, banana, leafy greens'
     },
     {
       id: 'topic_008', category: 'body_wellness', title: 'Lymphatic drainage — the underrated beauty hack',
       viral_score: 4, content_type: 'how_to_guide', target_emotion: 'discovery_and_empowerment',
       recommended_format: 'Science explainer + step-by-step routine',
       why_viral: 'Trending wellness topic with high visual interest, immediate DIY application, and satisfying before/after potential.',
-      hooks: ['Why your face is puffy every morning — and the 3-minute fix', 'Gua sha actually works — here's the science behind it', 'The morning routine that drains your face in 3 minutes'],
+      hooks: ['Why your face is puffy every morning — and the 3-minute fix', 'Gua sha actually works — here\'s the science behind it', 'The morning routine that drains your face in 3 minutes'],
       keywords: ['lymphatic drainage', 'gua sha', 'facial massage', 'face depuff', 'morning beauty routine', 'jade roller'],
       example_post: 'Your face is puffy every morning and no product is fixing it.nnYour lymphatic system is your body's drainage network. It removes toxins, excess fluid, and cellular waste. When sluggish, fluid pools in your face.nnSigns your facial lymph is backed up:n• Puffy eyes and cheeks every morningn• Dull, grey-looking skinn• Persistent dark circlesnn3-minute morning drainage routine:n1. Cold water: Splash cold water × 10. Temperature change stimulates lymph.n2. Gentle massage: Press lymph nodes on neck sides downward × 5. Opens the drain.n3. Gua sha sweep: Neck up to jawline, jawline to ear, cheekbone to temple. Light pressure. 3 sweeps each.'
     },
@@ -267,7 +267,7 @@ const BEAUTY_HEALTH_TRAINING_DATA = {
       why_viral: 'Gut-skin axis is one of the fastest-growing beauty science topics. Explains why topical-only approaches fail — huge paradigm shift.',
       hooks: ['Your acne is a gut problem, not a skin problem', 'Why no skincare routine will fix gut-related breakouts', 'The gut reset that cleared stubborn acne in 3 weeks'],
       keywords: ['gut skin axis', 'microbiome acne', 'leaky gut acne', 'probiotic skin', 'gut reset skin', 'probiotics skin health'],
-      example_post: 'Your acne might not be a skincare problem. It might be a gut problem.nnThe gut-skin axis: Your gut contains 70% of your immune system. When balance tips toward harmful bacteria, inflammation travels through your bloodstream and surfaces on your skin.nnSigns your skin issues are gut-related:n1. Acne that doesn't respond to topical treatmentsn2. Eczema that flares with certain foodsn3. Bloating and breakouts happen on the same daysnnLeaky gut pathway: Bad diet → harmful bacteria overgrow → gut wall becomes permeable → toxins enter bloodstream → skin inflammationnnProbiotic foods: Yogurt with live cultures, kimchi, sauerkraut, kefir, miso, tempehnn7-day gut reset:nDays 1-2: Cut sugar and alcohol completelynDays 3-4: Add one probiotic food per daynDays 5-6: Add prebiotic fiber: garlic, onion, banana, oatsnDay 7: Evaluate skin texture, inflammation, energy'
+      example_post: 'Your acne might not be a skincare problem. It might be a gut problem.nnThe gut-skin axis: Your gut contains 70% of your immune system. When balance tips toward harmful bacteria, inflammation travels through your bloodstream and surfaces on your skin.nnSigns your skin issues are gut-related:n1. Acne that doesn\'t respond to topical treatmentsn2. Eczema that flares with certain foodsn3. Bloating and breakouts happen on the same daysnnLeaky gut pathway: Bad diet → harmful bacteria overgrow → gut wall becomes permeable → toxins enter bloodstream → skin inflammationnnProbiotic foods: Yogurt with live cultures, kimchi, sauerkraut, kefir, miso, tempehnn7-day gut reset:nDays 1-2: Cut sugar and alcohol completelynDays 3-4: Add one probiotic food per daynDays 5-6: Add prebiotic fiber: garlic, onion, banana, oatsnDay 7: Evaluate skin texture, inflammation, energy'
     }
   ],
   content_types: ['educational', 'myth_bust', 'how_to', 'comparison', 'guide', 'science_explainer', 'motivational'],
@@ -559,7 +559,7 @@ export default function Dashboard() {
         
         console.log(`Retryable error encountered (${isHighDemand ? 'High Demand' : 'General'}). Retrying in ${actualDelay}ms... (${effectiveRetries} retries left)`);
         
-        // Let the user know the AI is retrying so they don't think it's stuck
+        // Let the user know the AI is retrying so they don\'t think it\'s stuck
         setToastMessage(`API busy. Retrying... (${effectiveRetries} attempts left)`);
         
         await new Promise(resolve => setTimeout(resolve, actualDelay));
@@ -1637,7 +1637,7 @@ export default function Dashboard() {
           'sirtuins — the longevity proteins in your skin cells',
           'circadian rhythm skincare — why timing your routine matters',
           'skin barrier repair timeline — what to expect week by week',
-          'the 14-day skin cell turnover myth — it's actually 28-40 days',
+          'the 14-day skin cell turnover myth — it\'s actually 28-40 days',
           'how your skin's acid mantle works like an invisible shield',
           'transepidermal water loss (TEWL) — the metric that predicts aging',
           'melanin biology — why hyperpigmentation is harder to treat than wrinkles',
@@ -1745,21 +1745,21 @@ export default function Dashboard() {
           'gym equipment bacteria and body breakouts',
         ],
         'trending_controversial': [
-          'stretch marks — what actually works and what doesn't',
-          'cellulite — the honest science (hint: it's not toxins)',
+          'stretch marks — what actually works and what doesn\'t',
+          'cellulite — the honest science (hint: it\'s not toxins)',
           'scalp health and hair growth — seborrheic dermatitis',
           'caffeine topically vs internally for under-eye circles',
           'tamanu oil for acne scars',
           'rosehip oil vs argan oil — which is better for your skin type',
           'mushroom extracts for skin — reishi, chaga, tremella',
           'how dehydration mimics aging — skin turgor test',
-          'sunscreen reapplication — the 2-hour rule and when it doesn't apply',
+          'sunscreen reapplication — the 2-hour rule and when it doesn\'t apply',
           'the "skinimalism" movement — less products, better skin?',
           'tretinoin vs retinol — is prescription always better?',
           'DIY skincare dangers — lemon juice, baking soda, and other myths',
           'Korean 10-step routine — genius or overkill in 2025?',
           'glass skin vs healthy skin — are they the same thing?',
-          'why expensive skincare isn't always better — the markup truth',
+          'why expensive skincare isn\'t always better — the markup truth',
           'natural vs synthetic ingredients — which is actually safer?',
         ],
       };
@@ -1878,7 +1878,7 @@ export default function Dashboard() {
       const prompt = `Create a ${standaloneDaysCount}-Day Viral Content Blueprint for Myanmar women aged 18-35.
       
       🔥 HERO THEME FOR THIS BLUEPRINT: "${selectedTheme}"
-      (All content must weave into this overarching theme to ensure it's completely unique.)
+      (All content must weave into this overarching theme to ensure it\'s completely unique.)
       
       Engagement Style: "${standaloneEngagementStyle}"
       Generation #${genCount} | Unique Creative Seed: ${randomSeed} | Time Slot: ${timeSlot} | Hour: ${hourSlot}
