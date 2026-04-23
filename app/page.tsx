@@ -7,7 +7,7 @@ import { Sparkles, Calendar, Zap, Image as ImageIcon, Loader2, Download, ArrowLe
 import Markdown from 'react-markdown';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { nuSkinProducts } from './nuskin-data';
-import { supabase } from '@/lib/supabaseClient';
+
 
 // Schema type constants to replace the @google/genai Type enum
 // These string values are serialized to the API route which converts them back
@@ -617,11 +617,9 @@ export default function Dashboard() {
   // Fetch profiles from Supabase on mount
   const fetchProfiles = async () => {
     try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .order('created_at', { ascending: true });
-      if (error) throw error;
+      const res = await fetch('/api/profiles');
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
       setProfiles(data || []);
       return data || [];
     } catch (err) {
@@ -696,12 +694,16 @@ export default function Dashboard() {
     if (!newProfileName.trim()) return;
     setIsCreatingProfile(true);
     try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .insert({ name: newProfileName.trim(), emoji: newProfileEmoji })
-        .select()
-        .single();
-      if (error) throw error;
+      const res = await fetch('/api/profiles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newProfileName.trim(), emoji: newProfileEmoji })
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to create profile');
+      }
+      const data = await res.json();
       setProfiles(prev => [...prev, data]);
       setNewProfileName('');
       setNewProfileEmoji('😊');
@@ -721,12 +723,13 @@ export default function Dashboard() {
     if (!apiKeyInput.trim() || !activeProfile) return;
     setIsSavingApiKey(true);
     try {
-      // Save to Supabase for cloud sync
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ gemini_api_key: apiKeyInput.trim() })
-        .eq('id', activeProfile.id);
-      if (error) throw error;
+      // Save to API
+      const res = await fetch(`/api/profiles/${activeProfile.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gemini_api_key: apiKeyInput.trim() })
+      });
+      if (!res.ok) throw new Error(await res.text());
       
       setUserApiKey(apiKeyInput.trim());
       setActiveProfile({ ...activeProfile, gemini_api_key: apiKeyInput.trim() });
@@ -755,17 +758,10 @@ export default function Dashboard() {
   const fetchTemplates = async () => {
     setIsFetchingTemplates(true);
     try {
-      let query = supabase
-        .from('campaign_settings')
-        .select('*')
-        .order('updated_at', { ascending: false });
-      
-      if (activeProfile) {
-        query = query.eq('user_profile_id', activeProfile.id);
-      }
-      
-      const { data, error } = await query;
-      if (error) throw error;
+      const url = activeProfile ? `/api/templates?profileId=${activeProfile.id}` : '/api/templates';
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
       setSavedTemplates(data || []);
     } catch (error: any) {
       console.error('Fetch templates error:', error);
@@ -795,20 +791,23 @@ export default function Dashboard() {
         const ext = match[1].split('/')[1] || 'jpeg';
         const fileName = `campaign/product-${Date.now()}-${i}.${ext}`;
         
-        const { error: uploadError } = await supabase.storage
-          .from('product-images')
-          .upload(fileName, blob, { upsert: true, contentType: match[1] });
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            base64: match[2],
+            contentType: match[1],
+            fileName
+          })
+        });
         
-        if (uploadError) {
-          console.error('Upload error:', uploadError);
+        if (!res.ok) {
+          console.error('Upload error:', await res.text());
           continue;
         }
         
-        const { data: urlData } = supabase.storage
-          .from('product-images')
-          .getPublicUrl(fileName);
-        
-        imageUrls.push(urlData.publicUrl);
+        const uploadData = await res.json();
+        imageUrls.push(uploadData.url);
       }
     }
     return imageUrls;
@@ -850,17 +849,20 @@ export default function Dashboard() {
 
       if (editingTemplateId) {
         // Update existing template
-        const { error } = await supabase
-          .from('campaign_settings')
-          .update(payload)
-          .eq('id', editingTemplateId);
-        if (error) throw error;
+        const res = await fetch(`/api/templates/${editingTemplateId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(await res.text());
       } else {
         // Insert new
-        const { error } = await supabase
-          .from('campaign_settings')
-          .upsert(payload, { onConflict: 'name' });
-        if (error) throw error;
+        const res = await fetch('/api/templates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(await res.text());
       }
 
       setToastMessage(`✅ Template "${nameToUse}" saved!`);
@@ -931,11 +933,8 @@ export default function Dashboard() {
   const handleDeleteTemplate = async (template: SavedTemplate) => {
     setIsDeletingTemplate(template.id);
     try {
-      const { error } = await supabase
-        .from('campaign_settings')
-        .delete()
-        .eq('id', template.id);
-      if (error) throw error;
+      const res = await fetch(`/api/templates/${template.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(await res.text());
       setToastMessage(`🗑️ Template "${template.name}" deleted.`);
       await fetchTemplates();
     } catch (error: any) {
@@ -955,11 +954,12 @@ export default function Dashboard() {
       return;
     }
     try {
-      const { error } = await supabase
-        .from('campaign_settings')
-        .update({ name: newName, updated_at: new Date().toISOString() })
-        .eq('id', template.id);
-      if (error) throw error;
+      const res = await fetch(`/api/templates/${template.id}`, { 
+        method: 'PUT', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ name: newName, updated_at: new Date().toISOString() }) 
+      });
+      if (!res.ok) throw new Error(await res.text());
       setToastMessage(`✅ Renamed to "${newName}".`);
       setRenamingTemplateId(null);
       setRenameInput('');
@@ -1064,18 +1064,23 @@ export default function Dashboard() {
           const ext = match[1].split('/')[1] || 'jpeg';
           const fileName = `campaign/product-${Date.now()}-${i}.${ext}`;
 
-          const { error: uploadError } = await supabase.storage
-            .from('product-images')
-            .upload(fileName, blob, { upsert: true, contentType: match[1] });
-
-          if (uploadError) {
-            console.error('Upload error:', uploadError);
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              base64: match[2],
+              contentType: match[1],
+              fileName
+            })
+          });
+          
+          if (!res.ok) {
+            console.error('Upload error:', await res.text());
             continue;
           }
-
-          const { data: urlData } = supabase.storage
-            .from('product-images')
-            .getPublicUrl(fileName);
+          
+          const uploadData = await res.json();
+          const urlData = { publicUrl: uploadData.url };
 
           uploadedNewUrls.push(urlData.publicUrl);
         }
@@ -1103,11 +1108,12 @@ export default function Dashboard() {
         updated_at: new Date().toISOString(),
       };
 
-      const { error } = await supabase
-        .from('campaign_settings')
-        .update(payload)
-        .eq('id', editDataTemplate.id);
-      if (error) throw error;
+      const res = await fetch(`/api/templates/${editDataTemplate.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(await res.text());
 
       setToastMessage(`✅ Template "${editFormData.name}" updated!`);
       setShowEditDataModal(false);
