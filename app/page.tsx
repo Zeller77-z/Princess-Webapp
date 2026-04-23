@@ -26,7 +26,9 @@ const callAI = async (
   model: string,
   contents: any,
   config?: any,
-  userApiKey?: string
+  userApiKey?: string,
+  stream: boolean = false,
+  onChunk?: (text: string) => void
 ): Promise<{ text: string; candidates?: any }> => {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -42,7 +44,7 @@ const callAI = async (
     const res = await fetch('/api/generate', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ model, contents, config }),
+      body: JSON.stringify({ model, contents, config, stream }),
       signal: controller.signal
     });
     
@@ -55,6 +57,23 @@ const callAI = async (
       error.code = errorBody.status || res.status;
       error.error = errorBody.error_details || { code: res.status, status: res.status >= 500 ? 'UNAVAILABLE' : 'FAILED' };
       throw error;
+    }
+
+    if (stream) {
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+      
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          fullText += chunk;
+          if (onChunk) onChunk(fullText);
+        }
+      }
+      return { text: fullText };
     }
 
     return res.json();
@@ -649,7 +668,7 @@ export default function Dashboard() {
               const res = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model: 'gemini-2.5-flash', contents: 'test', config: {} }),
+                body: JSON.stringify({ model: 'gemini-2.5-pro', contents: 'test', config: {} }),
               });
               setHasKey(res.status !== 401);
             } catch {
@@ -683,7 +702,7 @@ export default function Dashboard() {
         const res = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model: 'gemini-2.5-flash', contents: 'test', config: {} }),
+          body: JSON.stringify({ model: 'gemini-2.5-pro', contents: 'test', config: {} }),
         });
         setHasKey(res.status !== 401);
       } catch {
@@ -1332,7 +1351,7 @@ export default function Dashboard() {
       
       contents.parts.push({ text: prompt });
 
-      const response = await withRetry(() => callAI('gemini-2.5-flash', contents, {
+      const response = await withRetry(() => callAI('gemini-2.5-pro', contents, {
           responseMimeType: "application/json",
           responseSchema: {
             type: SchemaType.OBJECT,
@@ -1425,7 +1444,7 @@ export default function Dashboard() {
       }
       contents.parts.push({ text: prompt });
 
-      const response = await withRetry(() => callAI('gemini-2.5-flash', contents, {
+      const response = await withRetry(() => callAI('gemini-2.5-pro', contents, {
           temperature: 1.3,
           responseMimeType: "application/json",
           responseSchema: {
@@ -1517,7 +1536,7 @@ export default function Dashboard() {
       }
       contents.parts.push({ text: prompt });
 
-      const response = await withRetry(() => callAI('gemini-2.5-flash', contents, {
+      const response = await withRetry(() => callAI('gemini-2.5-pro', contents, {
           temperature: 0.7,
           responseMimeType: "application/json",
           responseSchema: {
@@ -1917,7 +1936,7 @@ export default function Dashboard() {
       9. Write the content 100% natively in the Myanmar (Burmese) language. Warm sisterly tone. Never clinical or formal.`;
 
       const contents: any = { parts: [{ text: prompt }] };
-      const response = await withRetry(() => callAI('gemini-2.5-flash', contents, {
+      const response = await withRetry(() => callAI('gemini-2.5-pro', contents, {
           systemInstruction: MYANMAR_BEAUTY_HEALTH_WRITER_PROMPT,
           temperature: 1.4,
           topP: 0.95,
@@ -2142,7 +2161,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
       6. Each hook should use a DIFFERENT hook technique (story, question, number, callout, POV, etc.)
       7. RANDOM SEED: ${Math.random().toString(36).substring(2, 10)}-${Date.now() % 100000} (use this to ensure uniqueness)`;
 
-      const response = await withRetry(() => callAI('gemini-2.5-flash', prompt, {
+      const response = await withRetry(() => callAI('gemini-2.5-pro', prompt, {
           systemInstruction: MYANMAR_STRATEGIST_PROMPT,
           temperature: 1.2 + (currentGenCount * 0.1 > 0.5 ? 0.5 : currentGenCount * 0.1),
           responseMimeType: "application/json",
@@ -2330,7 +2349,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
       }
       `;
 
-      const response = await withRetry(() => callAI('gemini-2.5-flash', prompt, {
+      const response = await withRetry(() => callAI('gemini-2.5-pro', prompt, {
           systemInstruction: MYANMAR_STRATEGIST_PROMPT,
           temperature: 1.0,
           maxOutputTokens: 8192,
@@ -2357,7 +2376,11 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
             },
             required: ["variations"]
           }
-        }, currentApiKey));
+        }, currentApiKey, true, (text) => {
+          if (text.length > 50) {
+             setToastMessage(`Writing post... (${Math.min(99, Math.floor(text.length / 20))}%)`);
+          }
+        }));
 
       let jsonStr = response.text || '{}';
       jsonStr = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -2518,7 +2541,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
       }
       `;
 
-      const response = await withRetry(() => callAI('gemini-2.5-flash', prompt, {
+      const response = await withRetry(() => callAI('gemini-2.5-pro', prompt, {
           systemInstruction: MYANMAR_STRATEGIST_PROMPT,
           responseMimeType: "application/json",
           responseSchema: {
@@ -2684,7 +2707,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
       3. TARGET AUDIENCE ALIGNMENT: You MUST strictly tailor all hooks to the specific Target Audience ("${targetAudience}"). Speak directly to their specific age group, pain points, desires, and lifestyle. Do not use generic messaging.
       4. Return a JSON array of strings.`;
 
-      const response = await withRetry(() => callAI('gemini-2.5-flash', prompt, {
+      const response = await withRetry(() => callAI('gemini-2.5-pro', prompt, {
           systemInstruction: MYANMAR_STRATEGIST_PROMPT,
           responseMimeType: "application/json",
           responseSchema: {

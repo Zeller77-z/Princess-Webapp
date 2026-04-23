@@ -2,11 +2,12 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const maxDuration = 60;
+export const runtime = 'edge';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { model, contents, config } = body;
+    const { model, contents, config, stream } = body;
 
     const userKey = request.headers.get('x-api-key');
     const apiKey = userKey || process.env.GEMINI_API_KEY || '';
@@ -22,27 +23,58 @@ export async function POST(request: NextRequest) {
 
     const processedConfig = config ? reconstructConfig(config) : undefined;
 
-    const response = await ai.models.generateContent({
-      model,
-      contents,
-      config: processedConfig,
-    });
+    if (stream) {
+      const responseStream = await ai.models.generateContentStream({
+        model,
+        contents,
+        config: processedConfig,
+      });
 
-    if (response.candidates?.[0]?.content?.parts) {
-      const parts = response.candidates[0].content.parts;
-      const hasImageParts = parts.some((p: any) => p.inlineData);
+      const encoder = new TextEncoder();
+      const readable = new ReadableStream({
+        async start(controller) {
+          try {
+            for await (const chunk of responseStream) {
+              if (chunk.text) {
+                controller.enqueue(encoder.encode(chunk.text));
+              }
+            }
+            controller.close();
+          } catch (e) {
+            controller.error(e);
+          }
+        }
+      });
+      return new Response(readable, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        }
+      });
+    } else {
+      const response = await ai.models.generateContent({
+        model,
+        contents,
+        config: processedConfig,
+      });
 
-      if (hasImageParts) {
-        return NextResponse.json({
-          text: response.text || '',
-          candidates: response.candidates,
-        });
+      if (response.candidates?.[0]?.content?.parts) {
+        const parts = response.candidates[0].content.parts;
+        const hasImageParts = parts.some((p: any) => p.inlineData);
+
+        if (hasImageParts) {
+          return NextResponse.json({
+            text: response.text || '',
+            candidates: response.candidates,
+          });
+        }
       }
-    }
 
-    return NextResponse.json({
-      text: response.text || '',
-    });
+      return NextResponse.json({
+        text: response.text || '',
+      });
+    }
   } catch (error: any) {
     console.error('API Generate Error:', error);
 
