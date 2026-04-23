@@ -643,9 +643,7 @@ export default function Dashboard() {
           if (found.gemini_api_key) {
             setUserApiKey(found.gemini_api_key);
             setHasKey(true);
-          } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
-      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
-    } else {
+          } else {
             // Profile exists but no API key — check server fallback
             try {
               const res = await fetch('/api/generate', {
@@ -679,8 +677,6 @@ export default function Dashboard() {
     if (profile.gemini_api_key) {
       setUserApiKey(profile.gemini_api_key);
       setHasKey(true);
-    } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
-      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
     } else {
       // Check if server has a fallback key
       try {
@@ -859,9 +855,7 @@ export default function Dashboard() {
           .update(payload)
           .eq('id', editingTemplateId);
         if (error) throw error;
-      } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
-      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
-    } else {
+      } else {
         // Insert new
         const { error } = await supabase
           .from('campaign_settings')
@@ -919,9 +913,7 @@ export default function Dashboard() {
           }
         }
         setProductImages(loadedImages);
-      } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
-      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
-    } else {
+      } else {
         setProductImages([]);
       }
 
@@ -1155,9 +1147,7 @@ export default function Dashboard() {
         if (logoImage) {
           const withLogo = await applyLogoOverlay(generatedImage, logoImage, logoPosition, logoScale, logoOpacity);
           setFinalImageWithLogo(withLogo);
-        } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
-      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
-    } else {
+        } else {
           setFinalImageWithLogo(generatedImage);
         }
       }
@@ -1174,8 +1164,6 @@ export default function Dashboard() {
       setToastMessage('API Key invalid or not found. Please update your API key in your profile settings.');
     } else if (isRetryableError(error)) {
       setToastMessage('High demand or quota exceeded. Please wait a moment and try again.');
-    } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
-      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
     } else {
       setToastMessage(error.message || defaultMessage);
     }
@@ -1195,9 +1183,7 @@ export default function Dashboard() {
             height *= maxWidth / width;
             width = maxWidth;
           }
-        } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
-      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
-    } else {
+        } else {
           if (height > maxHeight) {
             width *= maxHeight / height;
             height = maxHeight;
@@ -2423,9 +2409,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
         setPostVariations(variations);
         setPostHistory([variations[0].content]);
         setHistoryIndex(0);
-      } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
-      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
-    } else {
+      } else {
         console.error("Parsed data does not contain variations:", data);
         throw new Error("Invalid response format");
       }
@@ -2604,9 +2588,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
           setPostHistory([variationData.content]);
           setHistoryIndex(0);
         }
-      } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
-      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
-    } else {
+      } else {
         console.error("Parsed data does not contain content:", data);
         throw new Error("Invalid response format");
       }
@@ -2777,9 +2759,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
           increment = prev < 50 ? 0.8 : prev < 80 ? 0.4 : 0.2; // ~15s
         } else if (selectedImageModel === 'gemini-2.5-flash-image-preview') {
           increment = prev < 50 ? 0.4 : prev < 80 ? 0.2 : 0.1; // ~30s
-        } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
-      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
-    } else {
+        } else {
           increment = prev < 50 ? 0.2 : prev < 80 ? 0.1 : 0.05; // ~60s
         }
         
@@ -2929,9 +2909,7 @@ CURRENT DATE CONTEXT: ${currentMonth} ${currentYear}
             sceneLighting = 'beauty lighting that emphasizes shine and texture — soft, wrapping light that would make hair gleam. Warm undertone with beautiful specular highlights. Slight backlight creating a luminous halo effect. Shot on Sony A7RV with 70-200mm f/2.8 for beautiful compression and bokeh';
             sceneColor = 'rich, glossy palette — deep chocolate browns, honey gold, warm amber, healthy pink scalp tones, natural wood. Color grading: warm, rich, glossy — emphasizing shine and health';
             sceneAngle = 'close-up beauty angle with the product prominently featured. Shallow depth of field with gorgeous hair-like texture elements in the background';
-          } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
-      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
-    } else {
+          } else {
             // DEFAULT: Premium Lifestyle Editorial
             autoStyleName = 'Premium Lifestyle Editorial';
             sceneDescription = 'a world-class lifestyle product photograph that feels like it was shot by a top advertising agency for a major beauty brand. The product is placed in an aspirational, real-life setting that the target audience dreams about. The scene tells a story — not just showing a product, but showing a LIFE. This image must make a Myanmar woman aged 18-35 stop scrolling and immediately save it';
@@ -3205,9 +3183,7 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
         // gemini-2.5-flash-image only supports up to 1K
         if (selectedImageModel === 'gemini-2.5-flash-image') {
           // No imageSize param needed — defaults to 1K (max for this model)
-        } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
-      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
-    } else {
+        } else {
           // For Pro and Nano Banana 2, minimum is 1K
           const effectiveSize = imageSize === '512' ? '1K' : imageSize;
           imageConfig.imageSize = effectiveSize as any;
@@ -3301,9 +3277,7 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
             };
             if (selectedImageModel === 'gemini-2.5-flash-image') {
               // No imageSize for flash
-            } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
-      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
-    } else {
+            } else {
               const effectiveSize = imageSize === '512' ? '1K' : imageSize;
               genericImageConfig.imageSize = effectiveSize as any;
             }
@@ -3316,9 +3290,7 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
             console.error('Genericized prompt also failed:', e);
             throw primaryError; // Throw original error if generic also fails
           }
-        } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
-      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
-    } else {
+        } else {
           console.error('Primary model failed after retries:', primaryError);
           throw primaryError;
         }
@@ -3345,9 +3317,7 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
       if (!base64Image) {
         if (textResponse) {
           throw new Error(`Model refused to generate image: ${textResponse.substring(0, 100)}${textResponse.length > 100 ? '...' : ''}`);
-        } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
-      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
-    } else {
+        } else {
           throw new Error('No image generated by the model.');
         }
       }
@@ -3361,9 +3331,7 @@ CRITICAL NEGATIVE PROMPT FOR LOGOS: DO NOT draw, generate, or include ANY brand 
       if (logoImage) {
         const withLogo = await applyLogoOverlay(compressedImage, logoImage, logoPosition, logoScale, logoOpacity);
         setFinalImageWithLogo(withLogo);
-      } else if (message.includes('504') || errorStr.includes('504') || errorStr.includes('abort')) {
-      setToastMessage('Generation took too long (Timeout). Please try generating fewer days or try again.');
-    } else {
+      } else {
         setFinalImageWithLogo(compressedImage);
       }
     } catch (error: any) {
